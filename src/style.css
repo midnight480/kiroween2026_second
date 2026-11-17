@@ -1,0 +1,259 @@
+/* ---------- theme tokens. dark = a room lit by one candle, light = a shoji room at noon ---------- */
+:root {
+  --paper: #d8cdb0;
+  --paper-dim: #8f836a;
+  --ink: #1a1410;
+  --ink-soft: #4a3d2c;
+  --shu: #8e1010;      /* 朱: seals and punishments only */
+  --blood: #7a0a0a;    /* 血: curses and errors only */
+  --flame: #ffb347;
+  --pumpkin: #e8730c;
+  --bg: #0a0706;
+  --bg-image:
+    radial-gradient(ellipse at 50% 0%, #1d1511 0%, transparent 70%),
+    repeating-linear-gradient(90deg, #120c09 0 46px, #0e0907 46px 48px);
+  --text: #cbbfa6;
+  --text-dim: #9a8d76;
+  --text-faint: #6b5f4e;
+  --field-bg: #14100d;
+  --field-border: #3a2f25;
+  --field-focus: #8a6a3a;
+  --hdr-grad: linear-gradient(#050303ee, #05030300);
+  --ftr-grad: linear-gradient(#0000, #050303ee);
+  --gate-bg: #050303;
+  --gate-line: #6b5a44;
+  --card-shadow: 0 4px 10px #000a, inset 0 0 22px #8a7a5a55;
+  --ofuda-line: #9c9072;
+  --wax-edge: none;
+  --err-bg: #1a0e0c;
+  --err-text: #e0c8b8;
+  --eye: #e8e0c8;
+  font-family: "Hiragino Mincho ProN", "Noto Serif JP", "Yu Mincho", Georgia, serif;
+  color-scheme: dark;
+}
+:root[data-theme="light"] {
+  --paper: #cfc19a;
+  --paper-dim: #a79a79;
+  --ink: #1a1410;
+  --ink-soft: #3d3122;
+  --shu: #a01414;
+  --flame: #b85a08;   /* darker so the 灯 mark and hover colours stay readable on paper */
+  --bg: #e9e2cf;
+  --bg-image:
+    repeating-linear-gradient(90deg, #0000 0 118px, #7a6a4a66 118px 120px),
+    repeating-linear-gradient(0deg, #0000 0 118px, #7a6a4a66 118px 120px),
+    radial-gradient(ellipse at 50% 0%, #f6f1e2 0%, transparent 75%);
+  --text: #2a2118;
+  --text-dim: #4a3d2c;
+  --text-faint: #6b5a40;
+  --field-bg: #f4eedd;
+  --field-border: #a39574;
+  --field-focus: #8a5a1a;
+  --hdr-grad: linear-gradient(#e9e2cff2, #e9e2cf00);
+  --ftr-grad: linear-gradient(#e9e2cf00, #e9e2cff2);
+  --gate-bg: #efe8d6;
+  --gate-line: #8a7a5a;
+  --card-shadow: 0 5px 12px #3a2c1a66, inset 0 0 22px #8a7a5a55;
+  --ofuda-line: #7a6a4a;
+  --wax-edge: 0 0 0 1px #6b5a4099, 0 3px 6px #3a2c1a55;
+  --err-bg: #f3e1d8;
+  --err-text: #3a0e0a;
+  --eye: #120a06;
+  --shade: rgba(35, 22, 10, .3);
+  --veil: transparent;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--text); }
+body { background: var(--bg-image), var(--bg); }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+button, input, select { font: inherit; }
+
+/* gate */
+#gate { position: fixed; inset: 0; z-index: 2000; display: grid; place-items: center; background: var(--gate-bg); color: var(--text); text-align: center; transition: opacity 1.6s; }
+#gate.leaving { opacity: 0; pointer-events: none; }
+.gate-inner { max-width: 440px; padding: 24px; }
+#gate h1 { font-weight: 400; font-size: 64px; margin: 0; letter-spacing: .1em; }
+#gate h1 span { font-size: 22px; letter-spacing: .5em; display: block; color: var(--text-dim); }
+.sub { color: var(--text-dim); letter-spacing: .3em; margin: 4px 0 28px; }
+.warn { font-size: 13px; line-height: 1.9; color: var(--text-dim); }
+.btn { margin: 20px 0 14px; padding: 10px 26px; background: transparent; border: 1px solid var(--gate-line); color: var(--text); cursor: pointer; letter-spacing: .2em; }
+.btn:hover { border-color: var(--flame); color: var(--flame); box-shadow: 0 0 18px #ffb34744; }
+.safe { display: block; font-size: 12px; color: var(--text-dim); }
+.gate-lang { margin-top: 18px; display: flex; gap: 10px; justify-content: center; }
+.gate-lang button { background: transparent; border: 0; border-bottom: 1px solid transparent; color: var(--text-faint); cursor: pointer; font-size: 12px; letter-spacing: .15em; padding: 2px 4px; }
+.gate-lang button:hover, .gate-lang button.on { color: var(--text); border-bottom-color: var(--gate-line); }
+
+/* header */
+#top { position: fixed; top: 0; left: 0; right: 0; z-index: 30; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 10px 20px; background: var(--hdr-grad); }
+.brand { font-size: 18px; letter-spacing: .15em; white-space: nowrap; }
+.brand b { font-size: 26px; font-weight: 400; color: var(--flame); text-shadow: 0 0 12px #ff9d2e88; }
+.brand small { color: var(--text-faint); font-size: 11px; letter-spacing: .3em; margin-left: 8px; }
+#add { display: flex; gap: 8px; align-items: center; }
+#add input, #add select { background: var(--field-bg); border: 1px solid var(--field-border); color: var(--text); padding: 8px 10px; border-radius: 2px; }
+#add input[type=text] { width: 230px; }
+#add input:focus, #add select:focus { outline: none; border-color: var(--field-focus); }
+.pumpkin-btn { width: 46px; height: 42px; border: 0; background: transparent; cursor: pointer; padding: 0; filter: drop-shadow(0 0 6px #ff8a1c66); transition: transform .2s; }
+.pumpkin-btn:hover { transform: scale(1.1) rotate(-4deg); filter: drop-shadow(0 0 12px #ff8a1ccc); }
+.pumpkin-btn svg, .pumpkin-mini svg { width: 100%; height: 100%; }
+.pumpkin-mini { display: inline-block; width: 18px; height: 16px; vertical-align: -3px; }
+
+/* board */
+#board { position: fixed; inset: 0; top: 64px; bottom: 40px; z-index: 10; overflow-x: hidden; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--field-border) transparent; }
+#empty { position: fixed; inset: 0; display: grid; place-content: center; text-align: center; color: var(--text-dim); line-height: 2; z-index: 5; pointer-events: none; }
+#empty small { color: var(--text-faint); }
+#empty.hide { display: none; }
+
+.card { position: absolute; width: 168px; cursor: grab; user-select: none; touch-action: none; transform: rotate(var(--rot, 0deg)); transition: filter 1s; }
+.card:focus-visible { outline: 2px solid var(--flame); outline-offset: 6px; }
+.card.drag { cursor: grabbing; z-index: 50; filter: drop-shadow(0 14px 18px #000a); }
+.card.uneasy { animation: uneasy .35s steps(2) 1; }
+.card.slide { transition: left 1.4s ease-in-out, top 1.4s ease-in-out; }
+@keyframes uneasy { 0%{translate:0 0} 25%{translate:-2px 1px} 50%{translate:2px -1px} 75%{translate:-1px -2px} 100%{translate:0 0} }
+
+.candle { position: relative; height: 112px; width: 34px; margin: 0 auto -6px; z-index: 2; }
+.wax { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(90deg, #b9ae96, #efe6cf 45%, #a89d86); border-radius: 3px 3px 2px 2px; transition: height 1s linear; min-height: 6px; box-shadow: var(--wax-edge); }
+.wax::before { content: ""; position: absolute; top: -3px; left: 0; right: 0; height: 7px; border-radius: 50%; background: #f4ecd6; }
+.wax::after { content: ""; position: absolute; top: 2px; left: 5px; width: 5px; height: 16px; border-radius: 0 0 5px 5px; background: #efe6cf; }
+.wick { position: absolute; top: -12px; left: 50%; width: 2px; height: 9px; background: #1a1410; transform: translateX(-50%); }
+.flame { position: absolute; top: -40px; left: 50%; width: 14px; height: 28px; margin-left: -7px; border-radius: 50% 50% 50% 50% / 62% 62% 38% 38%; background: radial-gradient(ellipse at 50% 75%, #fff6d0 0%, #ffc457 40%, #ff7a18 80%, transparent 100%); box-shadow: 0 0 22px 8px #ff9d2e66; transform-origin: 50% 90%; animation: flick 1.1s infinite alternate ease-in-out; }
+@keyframes flick { 0%{transform:scale(1,1) rotate(-2deg)} 40%{transform:scale(.93,1.08) rotate(2deg)} 100%{transform:scale(1.05,.94) rotate(-1deg)} }
+.card.low .flame { animation: flick .18s infinite alternate, gutter 2.3s infinite; }
+@keyframes gutter { 0%,88%{opacity:1} 92%{opacity:.15} 96%{opacity:.9} 100%{opacity:.3} }
+.card.out .flame { display: none; }
+.card.out .wick::after { content: ""; position: absolute; top: -26px; left: -6px; width: 14px; height: 26px; background: radial-gradient(#9996 0, transparent 70%); animation: smoke 4s infinite; }
+@keyframes smoke { from{transform:translateY(0);opacity:.7} to{transform:translateY(-22px) scale(1.8);opacity:0} }
+
+.ofuda { position: relative; background: var(--paper); color: var(--ink); padding: 16px 12px 12px; min-height: 140px; border: 1px solid var(--ofuda-line); box-shadow: var(--card-shadow); text-align: center; background-image: repeating-linear-gradient(0deg, #0000 0 3px, #0000000a 3px 4px); }
+.ofuda::before { content: ""; position: absolute; top: 0; left: 50%; width: 3px; height: 26px; margin-left: -1.5px; background: var(--shu); transform: translateY(-8px); }
+.ofuda h3 { margin: 6px 0 10px; font-size: 16px; font-weight: 600; line-height: 1.4; word-break: break-word; }
+.ofuda .left { font-size: 12px; letter-spacing: .1em; color: var(--ink-soft); margin-bottom: 10px; }
+.card.urgent .left { color: var(--shu); font-weight: 600; }
+.card.out .ofuda { background-color: var(--paper-dim); color: #2a1d1a; }
+.card.out .ofuda::after { content: "遅"; position: absolute; right: 8px; top: 6px; font-size: 38px; color: var(--shu); opacity: .75; transform: rotate(8deg); }
+.card.out .wax { filter: brightness(.55); }
+.card.out h3 { text-decoration: line-through; text-decoration-color: var(--shu); }
+.card.leaving { animation: leave 1.6s forwards; pointer-events: none; }
+@keyframes leave { to { opacity: 0; transform: translateY(-14px) rotate(var(--rot)); filter: blur(5px); } }
+.card.glitch h3 { color: var(--shu); }
+
+/* darkness following the cursor */
+#dark { position: fixed; inset: 0; z-index: 20; pointer-events: none;
+  background: radial-gradient(circle 340px at var(--mx, 50%) var(--my, 50%), #0000 0%, var(--dark-mid, #0006) 55%, var(--dark-edge, #000a) 100%); transition: opacity .6s; }
+#dark.breath { animation: breath 2.4s ease-in-out; }
+@keyframes breath { 0%,100%{opacity:1} 40%{opacity:.5} 60%{opacity:1} 75%{opacity:.7} }
+body.safe #dark { background: radial-gradient(circle 420px at var(--mx, 50%) var(--my, 50%), #0000 0%, #0007 60%, #000a 100%); }
+/* light: a bright room. Someone seems to stand just behind the cursor, and their shadow falls on the paper. */
+:root[data-theme="light"] #dark { background:
+  radial-gradient(circle 190px at calc(var(--mx, 50%) + 38px) calc(var(--my, 50%) + 30px), var(--shade) 0%, #0000 100%),
+  linear-gradient(var(--veil), var(--veil)); }
+:root[data-theme="light"] body.safe #dark { --shade: rgba(35, 22, 10, .12); }
+
+/* presence */
+#presence { position: fixed; inset: 0; z-index: 25; pointer-events: none; }
+.figure { position: absolute; bottom: 0; width: 70px; height: 62vh; opacity: 0; transition: opacity 2.5s;
+  background: radial-gradient(ellipse 50% 14% at 50% 8%, #0a0a0a 60%, transparent 62%), linear-gradient(#0a0a0a, #050505); border-radius: 50% 50% 0 0 / 12% 12% 0 0; filter: blur(2px); }
+.figure::after { content: ""; position: absolute; top: 5%; left: 36%; width: 28%; height: 5%; background: radial-gradient(#e8e0d0aa 0 20%, transparent 60%); }
+.figure.on { opacity: .55; }
+/* light: a silhouette on the paper screen */
+:root[data-theme="light"] .figure { filter: blur(3px); }
+:root[data-theme="light"] .figure::after { display: none; }
+:root[data-theme="light"] .figure.on { opacity: .42; }
+.eyes { position: absolute; width: 36px; height: 8px; opacity: 0; animation: eyes 1.6s forwards; }
+.eyes::before, .eyes::after { content: ""; position: absolute; top: 0; width: 8px; height: 5px; border-radius: 50%; background: var(--eye); box-shadow: 0 0 8px var(--eye); }
+.eyes::before { left: 0; } .eyes::after { right: 0; }
+@keyframes eyes { 0%{opacity:0} 15%{opacity:.9} 70%{opacity:.9; transform:scaleY(1)} 80%{transform:scaleY(.1)} 100%{opacity:0} }
+
+/* footer */
+#bottom { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; display: flex; align-items: center; padding: 10px 20px; font-size: 12px; color: var(--text-dim); background: var(--ftr-grad); flex-wrap: wrap; gap: 6px 20px; }
+#bottom .count { order: -1; }
+#bottom .rules { margin-right: auto; }
+#bottom .rules { color: var(--text-faint); letter-spacing: .08em; }
+#bottom label { cursor: pointer; }
+#bottom .pick select { background: var(--field-bg); border: 1px solid var(--field-border); color: var(--text); font-size: 12px; padding: 1px 4px; border-radius: 2px; }
+#bottom select:focus-visible, #bottom input:focus-visible { outline: 2px solid var(--flame); outline-offset: 2px; }
+
+/* curse */
+#curse { position: fixed; inset: 0; z-index: 1500; background: #000; overflow: hidden; }
+#curse[hidden] { display: none; }
+#curse canvas { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; }
+#curse .blood { position: absolute; inset: 0; z-index: 3; transition: transform 3.2s cubic-bezier(.5, 0, .9, .6); }
+#curse .blood.drain { transform: translateY(115%); }
+#curse .col { position: absolute; top: 0; height: 0; background: linear-gradient(90deg, #3a0000, #8a0606 40%, #5c0202); border-radius: 0 0 999px 999px; box-shadow: 0 6px 20px #000a; }
+#curse .flash { position: absolute; inset: 0; z-index: 5; background: #fff; opacity: 0; pointer-events: none; }
+#curse .text { position: absolute; z-index: 6; inset: 0; display: grid; place-content: center; text-align: center; color: #b8aa90; letter-spacing: .4em; opacity: 0; transition: opacity 2s; }
+#curse .text b { font-size: 36px; font-weight: 400; color: #9a1010; display: block; margin-bottom: 14px; }
+#curse .text small { font-size: 12px; color: #8a7d68; letter-spacing: .2em; }
+#curse.shake canvas { animation: shake .06s infinite; }
+@keyframes shake { 0%{transform:translate(0,0)} 25%{transform:translate(-14px,8px)} 50%{transform:translate(12px,-10px)} 75%{transform:translate(-8px,-6px)} }
+#curse .scan { position: absolute; inset: 0; z-index: 2; pointer-events: none; background: repeating-linear-gradient(0deg, #0000 0 2px, #0006 2px 3px), radial-gradient(ellipse at 50% 50%, #0000 40%, #000c 100%); }
+
+@media (max-width: 720px) {
+  #top { flex-direction: column; align-items: stretch; }
+  #add input[type=text] { width: auto; flex: 1; }
+  #board { top: 120px; }
+  .brand small { display: none; }
+  #bottom { gap: 4px 14px; padding: 8px 12px; }
+  #bottom .rules { display: none; }
+  #board { bottom: 76px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .flame, .card.uneasy, #empty .child, .pumpkin-btn.ready, .card.low .flame, #dark.breath { animation: none; }
+  .card.slide { transition: none; }
+}
+
+/* empty state: the zashiki-warashi only shows up when there is nothing to do */
+#empty .child { width: 54px; margin: 0 auto 10px; opacity: .75; animation: child 7s infinite steps(1); filter: drop-shadow(0 0 6px #0008); }
+@keyframes child { 0%,92%{transform:translateX(0)} 93%{transform:translateX(-26px)} 96%{transform:translateX(30px)} 100%{transform:translateX(0)} }
+#empty p { margin: 0; }
+
+/* salt mound: error state */
+.salt-wrap { position: relative; width: 40px; height: 34px; flex: none; }
+.salt { position: absolute; left: 4px; bottom: 2px; width: 32px; height: 26px; background: radial-gradient(circle at 40% 30%, #fff, #cfcabd 70%); clip-path: polygon(50% 0, 78% 55%, 100% 100%, 0 100%, 22% 55%); transition: transform .3s; }
+.salt-wrap.fall .salt { animation: crumble 1s forwards; }
+.salt-wrap.fall::before, .salt-wrap.fall::after { content: ""; position: absolute; bottom: 0; width: 10px; height: 6px; background: #e6e0cf; border-radius: 50%; }
+.salt-wrap.fall::before { left: -4px; } .salt-wrap.fall::after { right: -6px; width: 14px; }
+@keyframes crumble { 0%{transform:none} 40%{transform:translateX(3px) rotate(8deg)} 100%{transform:scale(1.5,.3) translateY(8px); opacity:.85} }
+.err { position: absolute; top: 56px; right: 20px; background: var(--err-bg); border: 1px solid var(--blood); color: var(--err-text); padding: 6px 12px; font-size: 13px; z-index: 40; }
+.err[hidden] { display: none; }
+.pumpkin-btn.ready { filter: drop-shadow(0 0 14px #ff8a1cee); animation: pulse 1.8s infinite; }
+@keyframes pulse { 50% { transform: scale(1.08); } }
+
+/* seal: hold to peel */
+.seal { position: relative; display: inline-block; overflow: hidden; border: 1px solid var(--ink-soft); background: #e8dfc6; color: #2c2218; padding: 4px 8px; font-size: 11px; letter-spacing: .03em; white-space: nowrap; cursor: pointer; user-select: none; touch-action: none; }
+.seal::before, .act.hold::before { content: ""; position: absolute; inset: 0; background: var(--shu); transform: scaleX(0); transform-origin: left; transition: transform .2s; }
+.seal.peeling::before, .act.hold.peeling::before { transform: scaleX(1); transition: transform .9s linear; }
+.seal span, .act span { position: relative; }
+.seal.peeling, .act.hold.peeling { color: #fff; }
+.seal:focus-visible, .pumpkin-btn:focus-visible { outline: 2px solid var(--flame); outline-offset: 2px; }
+
+/* count song */
+.card .song { font-size: 11px; color: var(--shu); min-height: 14px; letter-spacing: .2em; }
+
+/* card actions: rewrite, add wax, burn */
+.acts { display: flex; gap: 4px; justify-content: center; flex-wrap: wrap; margin: 0 0 10px; }
+.act { position: relative; overflow: hidden; background: transparent; border: 0; border-bottom: 1px dotted var(--ink-soft); color: var(--ink-soft); padding: 1px 3px; font-size: 11px; letter-spacing: .06em; cursor: pointer; touch-action: none; }
+.act:hover { color: var(--ink); border-bottom-style: solid; }
+.act:focus-visible, .wax-pick:focus-visible, .rewrite-in:focus-visible { outline: 2px solid var(--flame); outline-offset: 2px; }
+.act.burn { color: var(--shu); border-bottom-color: var(--shu); }
+.rewrite-in { user-select: text; width: 100%; font: inherit; font-size: 15px; font-weight: 600; text-align: center; color: var(--ink); background: #efe6cf; border: 1px solid var(--ink-soft); padding: 2px 4px; margin: 6px 0 10px; }
+.wax-pick { font: inherit; font-size: 11px; background: #efe6cf; color: var(--ink); border: 1px solid var(--ink-soft); margin-bottom: 10px; max-width: 100%; }
+/* burn: the card catches from below and the candle goes out */
+.card.burning { pointer-events: none; }
+.card.burning .candle { opacity: 0; transition: opacity .8s; }
+.card.burning .ofuda { animation: burnPaper 1.5s ease-in forwards; box-shadow: 0 0 34px 8px #ff6a00aa; }
+@keyframes burnPaper {
+  0% { filter: none; clip-path: inset(0 0 0 0); }
+  35% { filter: sepia(1) saturate(5) brightness(1.15); }
+  70% { filter: sepia(1) brightness(.35); }
+  100% { filter: brightness(0); clip-path: inset(0 0 100% 0); }
+}
+.when { font-size: 11px; color: var(--ink-soft); margin: -6px 0 10px; letter-spacing: .04em; }
+/* undo toast: five seconds to put the candle back */
+#undo { position: fixed; left: 50%; bottom: 52px; transform: translateX(-50%); z-index: 45; display: flex; gap: 12px; align-items: center; background: var(--field-bg); color: var(--text); border: 1px solid var(--field-border); padding: 6px 12px; font-size: 13px; box-shadow: 0 6px 18px #0008; }
+#undo[hidden] { display: none; }
+#undo button { background: transparent; border: 0; border-bottom: 1px solid var(--flame); color: var(--text); cursor: pointer; font: inherit; padding: 0 2px; }
+#undo button:hover { color: var(--flame); }
+#undo button:focus-visible { outline: 2px solid var(--flame); outline-offset: 2px; }
+:root[data-theme="light"] .salt { filter: drop-shadow(0 0 1px #5a4a30) drop-shadow(0 2px 2px #3a2c1a55); }
+:root[data-theme="light"] .brand b { text-shadow: none; }

@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="dark light" />
+  <title>Tomoshibi 灯 — The Candle Ledger</title>
+  <meta name="description" content="A to-do list where every deadline is a candle. Don't let it go out." />
+</head>
+<body>
+  <div id="gate">
+    <div class="gate-inner">
+      <h1>灯 <span>Tomoshibi</span></h1>
+      <p class="sub" data-i18n="subtitle">The Candle Ledger</p>
+      <p class="warn" data-i18n-html="gateWarn"></p>
+      <button id="enter" class="btn" data-i18n="gateEnter"></button>
+      <label class="safe"><input type="checkbox" id="safe-gate" /> <span data-i18n="gateSafe"></span></label>
+      <div class="gate-lang" role="group" aria-label="Language">
+        <button type="button" data-lang="en">English</button>
+        <button type="button" data-lang="ja">日本語</button>
+      </div>
+    </div>
+  </div>
+  <header id="top">
+    <div class="brand"><b>灯</b> Tomoshibi <small data-i18n="subtitle"></small></div>
+    <form id="add" autocomplete="off">
+      <input id="title" type="text" maxlength="40" data-i18n-ph="titlePh" required />
+      <select id="burn" data-i18n-aria="burnsFor">
+        <option value="1" data-i18n="burn1"></option>
+        <option value="30" data-i18n="burn30"></option>
+        <option value="120" data-i18n="burn120" selected></option>
+        <option value="1440" data-i18n="burn1440"></option>
+        <option value="4320" data-i18n="burn4320"></option>
+        <option value="custom" data-i18n="burnCustom"></option>
+      </select>
+      <input id="due" type="datetime-local" data-i18n-aria="dueAria" hidden />
+      <button class="pumpkin-btn" type="submit" data-i18n-title="addTitle" data-i18n-aria="addTitle"></button>
+    </form>
+  </header>
+  <main id="board"></main>
+  <div id="empty">
+    <svg class="child" viewBox="0 0 60 90" aria-hidden="true"><circle cx="30" cy="20" r="14" fill="#c9bfa6"/><path d="M12 24 Q30 -4 48 24 L48 30 Q30 6 12 30Z" fill="#050505"/><path d="M14 90 L18 44 Q30 38 42 44 L46 90Z" fill="#a3331f"/><circle cx="25" cy="21" r="1.6" fill="#050505"/><circle cx="35" cy="21" r="1.6" fill="#050505"/></svg>
+    <p><span data-i18n="emptyMain"></span><br /><small><span data-i18n="emptySub1"></span><br /><span data-i18n="emptySub2"></span></small></p>
+  </div>
+  <div id="dark"></div>
+  <div id="presence"></div>
+  <div id="undo" hidden><span id="undo-text"></span> <button type="button" id="undo-btn" data-i18n="undoBtn"></button></div>
+  <div id="live" class="sr-only" role="status" aria-live="polite"></div>
+  <footer id="bottom">
+    <span class="rules" data-i18n="rules" data-i18n-title="rulesTitle"></span>
+    <span class="count"><i class="pumpkin-mini"></i> <span data-i18n="haunted"></span> <b id="haunted">0</b></span>
+    <span class="count out" data-i18n-title="putOutTitle"><span data-i18n="putOut"></span> <b id="putout">0</b></span>
+    <label data-i18n-title="safeTitle"><input type="checkbox" id="safe" /> <span data-i18n="safe"></span></label>
+    <label><input type="checkbox" id="mute" /> <span data-i18n="mute"></span></label>
+    <label class="pick"><span data-i18n="theme"></span>
+      <select id="theme">
+        <option value="system" data-i18n="themeSystem"></option>
+        <option value="light" data-i18n="themeLight"></option>
+        <option value="dark" data-i18n="themeDark"></option>
+      </select>
+    </label>
+    <label class="pick"><span data-i18n="lang"></span>
+      <select id="lang"><option value="en">English</option><option value="ja">日本語</option></select>
+    </label>
+  </footer>
+  <div id="curse" hidden></div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
