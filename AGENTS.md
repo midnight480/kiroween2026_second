@@ -47,12 +47,15 @@ npm run build    # tsc --noEmit && vite build。変更後は必ず通すこと
 ## ディレクトリ
 
 ```
-index.html        ゲート、ヘッダー(追加フォーム)、盤面、フッター、#curse
-src/main.ts       UI、カード、ドラッグ、御札の封、燃やす、書き直し、蝋の継ぎ足し、元に戻す、盛り塩、期限判定、テーマ、言語
+index.html        ゲート、ヘッダー、看板(3列)、フッター、登録モーダル、#curse
+help.html         ヘルプページ (ショートカット一覧、使い方)
+src/main.ts       看板の描画、カード、列の間のドラッグ、御札の封、燃やす、蝋の継ぎ足し、元に戻す、期限判定、テーマ、言語、ショートカット
+src/dialog.ts     登録・編集モーダル (件名、期限、担当者、状態、メモ、盛り塩のエラー)
+src/help.ts       ヘルプページのテーマと言語
 src/curse.ts      期限切れの呪いシーケンス (暗転→血→女→飛びかかり)
 src/presence.ts   気配の演出 (人影、目、囁き、ずれ、改変)
 src/audio.ts      Web Audio による効果音・環境音
-src/store.ts      Task型、localStorage (壊れたデータの退避)、統計、残り時間の整形、蝋燭の見た目の割合
+src/store.ts      Task型 (v2)、担当者、localStorage (v1 からの移行、壊れたデータの退避)、統計、残り時間の整形、蝋燭の見た目の割合
 src/i18n.ts       英語・日本語の辞書、期限の日時の整形 (和ホラーの語は入れない)
 src/style.css     全スタイル (ライトとダークは変数で切り替え)
 docs/             設計資料 (下記)

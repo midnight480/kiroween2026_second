@@ -90,13 +90,12 @@ function nudge(hooks: PresenceHooks) {
   const cards = hooks.cards();
   if (!cards.length) return;
   const c = cards[Math.floor(Math.random() * cards.length)];
-  const x = parseFloat(c.style.left) + rand(-12, 12);
-  const y = parseFloat(c.style.top) + rand(-8, 8);
+  // The card slides a little out of line, stays there for a while, then quietly goes back.
   c.classList.add("slide");
-  c.style.left = `${x}px`;
-  c.style.top = `${y}px`;
+  c.style.translate = `${rand(-12, 12).toFixed(1)}px ${rand(-6, 6).toFixed(1)}px`;
   audio.rustle(0.6);
-  setTimeout(() => c.classList.remove("slide"), 1500);
+  setTimeout(() => { c.style.translate = ""; }, rand(6000, 12000));
+  setTimeout(() => c.classList.remove("slide"), 14000);
 }
 
 function breath() {

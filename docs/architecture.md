@@ -1,28 +1,38 @@
 # アーキテクチャ
 
 ## データ
-
-`src/store.ts` の `Task`:
-
+`src/store.ts` の `Task` (v2):
 ```ts
 interface Task {
-  id: string;      // crypto.randomUUID()
-  title: string;
-  created: number; // ms。蝋燭の全長の起点
-  due: number;     // ms。蝋燭が燃え尽きる時刻
-  x: number; y: number; // 盤面上のカード位置(px)
-  cursed: boolean; // 呪い演出を再生済みか (1タスクにつき1回)
-  penalty?: number; // ms。蝋燭が短く見える時間。期限 (due) は変えない
+  id: string;            // crypto.randomUUID()
+  title: string;         // 1〜80文字
+  note?: string;         // 0〜500文字
+  assignee?: string;     // Member の id。アカウントができたらアカウントの id に置き換える
+  created: number;       // ms。蝋燭の全長の起点
+  due: number;           // ms。ユーザーが決めた期限。演出では変えない
+  status: "todo" | "doing" | "done";
+  doneAt?: number;
+  late?: boolean;        // 期限後に完了した
+  extended: number;      // 蝋を足した回数
+  cursed: boolean;       // 呪い演出を再生済みか (1タスクにつき1回)
+  penalty: number;       // ms。蝋燭が短く見える時間
+  updated: number;
 }
 ```
-
-- 保存先は `localStorage` の `tomoshibi.tasks.v1`。設定は `tomoshibi.settings` (`safe`, `mute`, `lang`: en / ja, `theme`: system / light / dark)。言語 (`lang`) とテーマ (`theme`: light / dark / system) を足す予定 (`features.md`)。
+- 保存先は `localStorage` の `tomoshibi.tasks.v2`。初回に v1 (`tomoshibi.tasks.v1`) があれば、全て `todo` として移す。v1 のキーは消さない。
+- 担当者の一覧は `tomoshibi.members` (`{ id, name }[]`)。設定は `tomoshibi.settings` (`safe`, `mute`, `lang`: en / ja, `theme`: system / light / dark)。ヘルプページも同じ設定を読む。
+- 期限切れは `isOverdue()`: `status !== "done"` かつ `due <= now`。`cursed` は呪いを再生済みかだけを表す。
 - 蝋燭の見た目の残り割合は `visualPct = (due - now - penalty) / (due - created)`。時計の残り割合は `truePct = (due - now) / (due - created)`。罰と伝染は `penalty` だけを増やす。
-- 期限切れは `due <= now` で判定する (`cursed` は呪いを再生済みかだけを表す)。
 - 統計 `tomoshibi.stats`: `putOut` (完了とお祓いの数)、`late` (そのうち期限後の数)、`burned` (燃やした数)。
 - 読めないデータは `tomoshibi.tasks.broken.<時刻>` に元の文字列を退避してから空で始める (`store.ts` `load()`)。保存に失敗したら `setSaveFailHandler` のコールバックで画面に知らせる。
-- 完了と削除は `removeTask()` が先にデータから外し、アニメーションは後から流す。直前の1件を5秒間 `undo` に持つ。
-- v2 のデータ (状態、完了の記録、延長回数) と移行の手順は `task-management.md` の「データ」にある。
+- 完了、移動、削除は `main.ts` の `setStatus()` と `burnTask()`。直前の変更の前の状態を `snapshot()` で丸ごと持ち、5秒間だけ戻せる。
+
+## 画面
+- `index.html`: ゲート、ヘッダー (ブランドと「New candle」)、看板 (`#board` の3つの `.col`)、フッター、登録モーダル (`<dialog id="task-dialog">`)、`#curse`。
+- `src/main.ts`: 看板の描画 (`render()` は並び順だけを直し、`refresh()` は毎秒、文字と蝋燭を直す)、カードの操作、列の間のドラッグ (`wireDrag()`)、期限判定、気配の hooks、ショートカット。
+- `src/dialog.ts`: 登録・編集モーダル。入力の検証 (件名、期限の範囲) と、担当者の追加。結果は `onSubmit` で `main.ts` に渡す。
+- `help.html` + `src/help.ts`: ヘルプページ。ルーターは使わず、`vite.config.ts` で2ページをビルドする。文言は HTML の `.en` / `.ja` で持ち、`<html lang>` で出し分ける。
+- 登録モーダルが開いている間、ドラッグ中、呪いの演出中は、期限判定と気配の演出を止める。
 
 ## 多言語とテーマ
 - `src/i18n.ts`: 英語と日本語の辞書。`t(key, vars)`、`applyI18n()`、`formatDue()`。HTML は `data-i18n` (本文)、`data-i18n-html`、`data-i18n-ph` (placeholder)、`data-i18n-title`、`data-i18n-aria` で差し込む。動的な文言は `refresh()` で `t()` を呼ぶ。
@@ -34,8 +44,8 @@ interface Task {
 
 1. `index.html` のゲートで「Light the candle」を押す。`AudioContext` を作る (ブラウザの自動再生制限のため必須)。
 2. `main.ts` が1秒ごとに `refresh()` (蝋燭、残り時間、数え歌の更新) と `checkExpiry()` (期限判定) を実行する。
-3. `checkExpiry()` は、ドラッグ中と呪い演出中は実行しない。期限切れの未呪いタスクを1件ずつ処理する。
-4. 処理は `cursed = true` にして保存し、`playCurse()` を待ち、最も近い蝋燭の残りを25%減らす。
+3. `checkExpiry()` は、ドラッグ中、モーダル表示中、呪い演出中は実行しない。期限切れの未呪いタスクを1件ずつ処理する。
+4. 処理は `cursed = true` にして保存し、`playCurse()` を待ち、期限が最も近い未完了の蝋燭を25%短く見せる (`penalty`)。
 
 ## 呪いシーケンス (`curse.ts`)
 

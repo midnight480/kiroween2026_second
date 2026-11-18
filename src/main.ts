@@ -1,25 +1,29 @@
 import "./style.css";
 import * as audio from "./audio";
-import { load, save, loadStats, saveStats, loadInfo, setSaveFailHandler, formatLeft, truePct, visualPct, type Task } from "./store";
+import {
+  load, save, loadStats, saveStats, loadMembers, saveMembers, loadInfo, setSaveFailHandler,
+  formatLeft, truePct, visualPct, isOverdue, STATUSES, type Task, type Status, type Member, type Stats,
+} from "./store";
 import { playCurse } from "./curse";
 import { startPresence, fire, type PresenceHooks } from "./presence";
 import { t, setLang, applyI18n, detectLang, formatDue, type Lang, type Key } from "./i18n";
+import { initDialog, openNew, openEdit, isOpen, MAX_MS } from "./dialog";
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
-const CARD_W = 168;
-/** Estimated card height. Real heights are measured where it matters. */
-const CARD_H = 350;
-/** Room above the first row: the flame stands 40px above the candle and the board clips what leaves it. */
-const TOP_PAD = 56;
-const MAX_TASKS = 60;
-const MIN_MS = 60_000;
-const MAX_MS = 365 * 86_400_000;
+/** Open tasks (to do + in progress) the room can hold. */
+const MAX_OPEN = 60;
+/** Finished tasks kept in the Done column. Older ones are dropped. */
+const MAX_DONE = 200;
+const COL_KEY: Record<Status, Key> = { todo: "colTodo", doing: "colDoing", done: "colDone" };
+
 let tasks: Task[] = load();
-const stats = loadStats();
+let stats: Stats = loadStats();
+let members: Member[] = loadMembers();
 let cursing = false;
 let dragging = false;
 const els = new Map<string, HTMLElement>();
-const board = $("board");
+const lists = new Map<Status, HTMLElement>(
+  STATUSES.map((s) => [s, document.querySelector<HTMLElement>(`.col[data-status="${s}"] .list`)!]));
 
 /* ---------- jack-o'-lantern (the only Western element, used as UI chrome) ---------- */
 const PUMPKIN = `<svg viewBox="0 0 64 56" aria-hidden="true">
@@ -44,9 +48,11 @@ const isSafe = () => safeBox.checked;
 const mqLight = matchMedia("(prefers-color-scheme: light)");
 
 function saveSettings() {
-  localStorage.setItem("tomoshibi.settings", JSON.stringify({
-    safe: isSafe(), mute: muteBox.checked, lang: langSel.value, theme: themeSel.value,
-  }));
+  try {
+    localStorage.setItem("tomoshibi.settings", JSON.stringify({
+      safe: isSafe(), mute: muteBox.checked, lang: langSel.value, theme: themeSel.value,
+    }));
+  } catch { /* settings are not worth an error message */ }
 }
 function applySettings() {
   document.body.classList.toggle("safe", isSafe());
@@ -84,6 +90,7 @@ function changeLang(l: Lang) {
   langSel.value = l;
   setLang(l);
   document.querySelectorAll<HTMLElement>(".gate-lang button").forEach((b) => b.classList.toggle("on", b.dataset.lang === l));
+  if (undo) $("undo-text").textContent = t(undo.key);
   refresh();
   saveSettings();
 }
@@ -116,6 +123,7 @@ $("enter").addEventListener("click", () => {
   $("gate").classList.add("leaving");
   setTimeout(() => $("gate").remove(), 1700);
 });
+const gateUp = () => !!document.getElementById("gate");
 
 /* ---------- cursor light ---------- */
 addEventListener("pointermove", (e) => {
@@ -123,111 +131,209 @@ addEventListener("pointermove", (e) => {
   document.documentElement.style.setProperty("--my", `${e.clientY}px`);
 });
 
-/* ---------- add form + salt (error state) ---------- */
-const form = $<HTMLFormElement>("add");
-const titleIn = $<HTMLInputElement>("title");
-const burn = $<HTMLSelectElement>("burn");
-const dueIn = $<HTMLInputElement>("due");
-const pumpkinBtn = form.querySelector<HTMLElement>(".pumpkin-btn")!;
-const saltWrap = document.createElement("div");
-saltWrap.className = "salt-wrap";
-saltWrap.innerHTML = `<div class="salt"></div>`;
-form.insertBefore(saltWrap, pumpkinBtn);
+/* ---------- messages ---------- */
 const errBox = document.createElement("div");
 errBox.className = "err";
 errBox.setAttribute("role", "alert");
 errBox.hidden = true;
 document.body.appendChild(errBox);
 let errTimer = 0;
-/** Show a message. With `salt`, the salt mound crumbles too (input errors only). */
-function notify(key: Key, salt = false, ms = 3200) {
-  if (salt) {
-    saltWrap.classList.remove("fall");
-    void saltWrap.offsetWidth;
-    saltWrap.classList.add("fall");
-    audio.rustle(0.5);
-  }
+function notify(key: Key, ms = 3200) {
   errBox.textContent = t(key);
   errBox.hidden = false;
   clearTimeout(errTimer);
-  errTimer = window.setTimeout(() => { errBox.hidden = true; saltWrap.classList.remove("fall"); }, ms);
+  errTimer = window.setTimeout(() => { errBox.hidden = true; }, ms);
 }
-const saltError = (key: Key) => notify(key, true);
-setSaveFailHandler(() => notify("errSave", false, 6000));
-burn.addEventListener("change", () => {
-  dueIn.hidden = burn.value !== "custom";
-  if (!dueIn.hidden) {
-    const d = new Date(Date.now() + 3600_000);
-    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-    dueIn.value = d.toISOString().slice(0, 16);
-  }
-});
-titleIn.addEventListener("input", () => pumpkinBtn.classList.toggle("ready", titleIn.value.trim().length > 0));
+setSaveFailHandler(() => notify("errSave", 6000));
+const announce = (s: string) => { $("live").textContent = s; };
 
-/** First free place on the board, row by row. Cards never start on top of each other. */
-function findSlot(): { x: number; y: number } {
-  const stepX = CARD_W + 24;
-  const cols = Math.max(1, Math.floor((board.clientWidth - 24) / stepX));
-  const taken = tasks.map((o) => ({ x: o.x, y: o.y, h: els.get(o.id)?.offsetHeight ?? CARD_H }));
-  for (let r = 0; r < 500; r++) {
-    for (let c = 0; c < cols; c++) {
-      const x = 24 + c * stepX;
-      const y = TOP_PAD + r * (CARD_H + 12);
-      const clash = taken.some((o) => Math.abs(o.x - x) < CARD_W + 8 && o.y < y + CARD_H && y < o.y + o.h + 8);
-      if (!clash) return { x: x + Math.random() * 8, y: y + Math.random() * 8 };
-    }
+/* ---------- saving ---------- */
+function persist() {
+  // keep the newest finished tasks only
+  const done = tasks.filter((x) => x.status === "done").sort((a, b) => (b.doneAt ?? 0) - (a.doneAt ?? 0));
+  if (done.length > MAX_DONE) {
+    const drop = new Set(done.slice(MAX_DONE).map((x) => x.id));
+    tasks = tasks.filter((x) => !drop.has(x.id));
   }
-  return { x: 24, y: TOP_PAD };
-}
-
-form.addEventListener("submit", (e) => {
-  e.preventDefault();
-  const title = titleIn.value.trim();
-  if (!title) return saltError("errTitle");
-  if (tasks.length >= MAX_TASKS) return notify("errLimit", true);
-  let due: number;
-  if (burn.value === "custom") {
-    due = new Date(dueIn.value).getTime();
-    if (!Number.isFinite(due) || due < Date.now() + MIN_MS) return saltError("errPast");
-    if (due > Date.now() + MAX_MS) return saltError("errFar");
-  } else {
-    due = Date.now() + Number(burn.value) * 60_000;
-  }
-  const { x, y } = findSlot();
-  const task: Task = { id: crypto.randomUUID(), title, created: Date.now(), due, x, y, cursed: false, penalty: 0 };
-  tasks.push(task);
   save(tasks);
-  titleIn.value = "";
-  pumpkinBtn.classList.remove("ready");
-  audio.rustle(0.4);
-  const el = createCard(task);
-  refresh();
-  el.scrollIntoView({ block: "nearest" });
-  titleIn.focus(); // keep adding
+  saveStats(stats);
+}
+
+/* ---------- undo: five seconds to take the last put-out or burn back ---------- */
+interface Snapshot { tasks: Task[]; stats: Stats; hideTimer: number; key: Key }
+let undo: Snapshot | null = null;
+const undoBox = $("undo");
+function hideUndo() {
+  if (undo) clearTimeout(undo.hideTimer);
+  undo = null;
+  undoBox.hidden = true;
+}
+/** Call before a change that should be undoable. */
+function snapshot(): Omit<Snapshot, "hideTimer" | "key"> {
+  return { tasks: structuredClone(tasks), stats: { ...stats } };
+}
+function offerUndo(snap: Omit<Snapshot, "hideTimer" | "key">, key: Key) {
+  hideUndo();
+  undo = { ...snap, key, hideTimer: window.setTimeout(hideUndo, 5000) };
+  $("undo-text").textContent = t(key);
+  undoBox.hidden = false;
+}
+function undoLast() {
+  if (!undo) return;
+  tasks = undo.tasks;
+  stats = undo.stats;
+  hideUndo();
+  // cards still burning are dropped, so they come back clean
+  for (const [id, el] of els) if (el.classList.contains("burning")) { el.remove(); els.delete(id); }
+  persist();
+  audio.rustle(0.3);
+  render();
+}
+$("undo-btn").addEventListener("click", undoLast);
+
+/* ---------- state changes ---------- */
+function setStatus(task: Task, to: Status) {
+  if (task.status === to) return;
+  const snap = snapshot();
+  const now = Date.now();
+  if (to === "done") {
+    // Past the deadline it is an exorcism: done, and recorded as late.
+    task.late = task.due <= now ? true : undefined;
+    task.doneAt = now;
+    stats.putOut++;
+    if (task.late) stats.late++;
+    audio.candleOut();
+    offerUndo(snap, "undoPutOut");
+  } else {
+    if (task.status === "done") {
+      stats.putOut = Math.max(0, stats.putOut - 1);
+      if (task.late) stats.late = Math.max(0, stats.late - 1);
+      task.doneAt = undefined;
+      task.late = undefined;
+    }
+    audio.rustle(0.4);
+  }
+  task.status = to;
+  task.updated = now;
+  persist();
+  render();
+  announce(t("liveMoved", { col: t(COL_KEY[to]), title: task.title }));
+}
+
+function burnTask(el: HTMLElement, task: Task) {
+  const snap = snapshot();
+  tasks = tasks.filter((x) => x.id !== task.id);
+  stats.burned++;
+  persist();
+  el.classList.add("burning");
+  audio.burn();
+  offerUndo(snap, "undoBurned");
+  setTimeout(() => {
+    if (!tasks.some((x) => x.id === task.id) && els.get(task.id) === el) { el.remove(); els.delete(task.id); render(); }
+  }, 1600);
+  render();
+}
+
+/** Re-light an extinguished candle from now, or lengthen a burning one. */
+function extend(task: Task, min: number) {
+  const now = Date.now();
+  if (task.due <= now) {
+    // A new candle: its length is measured again from now. The curse already played and does not come twice.
+    task.created = now;
+    task.due = now + min * 60_000;
+    task.penalty = 0;
+  } else {
+    task.due = Math.min(task.due + min * 60_000, now + MAX_MS);
+  }
+  task.extended++;
+  task.updated = now;
+  persist();
+  audio.rustle(0.3);
+  render();
+}
+
+/* ---------- the dialog ---------- */
+function addMember(name: string): Member {
+  const found = members.find((m) => m.name === name);
+  if (found) return found;
+  const m = { id: crypto.randomUUID(), name };
+  members.push(m);
+  saveMembers(members);
+  return m;
+}
+
+initDialog({
+  members: () => members,
+  addMember,
+  onOpen: () => { /* hauntings wait while the user writes (see checkExpiry and hooks.cards) */ },
+  onClose: () => {
+    const focus = lastFocus;
+    lastFocus = null;
+    if (focus && document.contains(focus)) focus.focus();
+  },
+  onSubmit(input, task) {
+    const now = Date.now();
+    if (!task) {
+      if (tasks.filter((x) => x.status !== "done").length >= MAX_OPEN) return "errLimit";
+      const created: Task = {
+        id: crypto.randomUUID(), title: input.title, note: input.note, assignee: input.assignee,
+        created: now, due: input.due, status: input.status === "done" ? "todo" : input.status,
+        extended: 0, cursed: false, penalty: 0, updated: now,
+      };
+      tasks.push(created);
+      persist();
+      audio.rustle(0.4);
+      render();
+      requestAnimationFrame(() => els.get(created.id)?.scrollIntoView({ block: "nearest" }));
+      return null;
+    }
+    if (input.due !== task.due) {
+      if (task.due <= now && input.due > now) {
+        // re-lit from now, like adding wax
+        task.created = now;
+        task.penalty = 0;
+      }
+      task.due = input.due;
+    }
+    task.title = input.title;
+    task.note = input.note;
+    task.assignee = input.assignee;
+    task.updated = now;
+    if (input.status !== task.status) setStatus(task, input.status);
+    persist();
+    render();
+    return null;
+  },
 });
+let lastFocus: HTMLElement | null = null;
+function openDialog(task?: Task) {
+  if (cursing) return;
+  lastFocus = (document.activeElement as HTMLElement) ?? null;
+  if (task) openEdit(task); else openNew();
+}
+$("new").addEventListener("click", () => openDialog());
 
 /* ---------- cards ---------- */
 function esc(s: string) { return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!)); }
 
 function createCard(task: Task): HTMLElement {
-  const el = document.createElement("div");
+  const el = document.createElement("article");
   el.className = "card";
   el.dataset.id = task.id;
   el.tabIndex = 0;
-  el.setAttribute("role", "group");
-  const x = Math.max(0, Math.min(Math.max(0, board.clientWidth - CARD_W), task.x));
-  el.style.left = `${x}px`;
-  el.style.top = `${Math.max(TOP_PAD - 12, task.y)}px`;
-  el.style.setProperty("--rot", `${(Math.random() * 6 - 3).toFixed(1)}deg`);
+  el.style.setProperty("--rot", `${(Math.random() * 2.4 - 1.2).toFixed(2)}deg`);
   el.innerHTML = `
-    <div class="candle"><div class="wax"><div class="wick"></div><div class="flame"></div></div></div>
+    <div class="candle" aria-hidden="true"><div class="wax"><div class="wick"></div><div class="flame"></div></div></div>
     <div class="ofuda">
-      <h3>${esc(task.title)}</h3>
-      <div class="left"></div>
-      <div class="when"></div>
+      <h3></h3>
+      <div class="who"></div>
+      <div class="times"><span class="left"></span><span class="when"></span></div>
       <div class="song" aria-hidden="true"></div>
+      <p class="note"></p>
       <div class="acts">
-        <button type="button" class="act rewrite" data-i18n-title="actRewriteTitle"><span data-i18n="actRewrite"></span></button>
+        <button type="button" class="mv prev" aria-label=""><span aria-hidden="true">←</span></button>
+        <button type="button" class="mv next" aria-label=""><span aria-hidden="true">→</span></button>
+        <button type="button" class="act edit" data-i18n-title="actEditTitle"><span data-i18n="actEdit"></span></button>
         <button type="button" class="act extend" data-i18n-title="actWaxTitle"><span data-i18n="actWax"></span></button>
         <select class="wax-pick" hidden data-i18n-aria="actWaxTitle">
           <option value="" data-i18n="waxPick"></option>
@@ -236,19 +342,38 @@ function createCard(task: Task): HTMLElement {
           <option value="1440" data-i18n="wax1440"></option>
           <option value="4320" data-i18n="wax4320"></option>
         </select>
+        <span class="sp"></span>
         <button type="button" class="act hold burn" data-i18n-title="actBurnTitle"><span data-i18n="actBurn"></span></button>
       </div>
       <div class="seal" role="button" tabindex="0"><span></span></div>
     </div>`;
-  board.appendChild(el);
   els.set(task.id, el);
   applyI18n(el);
-  wireDrag(el, task);
-  wireKeys(el, task);
-  wireSeal(el, task);
-  wireBurn(el, task);
-  wireRewrite(el, task);
-  wireWax(el, task);
+  const find = () => tasks.find((x) => x.id === task.id);
+  const step = (dir: -1 | 1) => {
+    const cur = find();
+    if (!cur) return;
+    const to = STATUSES[STATUSES.indexOf(cur.status) + dir];
+    if (to) setStatus(cur, to);
+    requestAnimationFrame(() => el.focus());
+  };
+  el.querySelector(".mv.prev")!.addEventListener("click", () => step(-1));
+  el.querySelector(".mv.next")!.addEventListener("click", () => step(1));
+  el.querySelector(".act.edit")!.addEventListener("click", () => { const cur = find(); if (cur) openDialog(cur); });
+  wireHold(el.querySelector<HTMLElement>(".seal")!, 900, () => { const cur = find(); if (cur) setStatus(cur, "done"); });
+  wireHold(el.querySelector<HTMLElement>(".act.burn")!, 900, () => { const cur = find(); if (cur) burnTask(el, cur); });
+  wireWax(el, find);
+  wireDrag(el, find);
+  el.addEventListener("keydown", (e) => {
+    if (e.target !== el) return;
+    if (e.key === "ArrowLeft") { e.preventDefault(); step(-1); }
+    else if (e.key === "ArrowRight") { e.preventDefault(); step(1); }
+    else if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+      e.preventDefault();
+      const sib = (e.key === "ArrowUp" ? el.previousElementSibling : el.nextElementSibling) as HTMLElement | null;
+      sib?.classList.contains("card") && sib.focus();
+    } else if (e.key === "Enter") { e.preventDefault(); const cur = find(); if (cur) openDialog(cur); }
+  });
   return el;
 }
 
@@ -266,119 +391,13 @@ function wireHold(btn: HTMLElement, ms: number, onDone: () => void) {
   btn.addEventListener("pointerup", stop);
   btn.addEventListener("pointerleave", stop);
   btn.addEventListener("pointercancel", stop);
-  btn.addEventListener("keydown", (e) => { if ((e.key === " " || e.key === "Enter") && !e.repeat) { e.preventDefault(); start(); } });
+  btn.addEventListener("contextmenu", (e) => e.preventDefault());
+  btn.addEventListener("keydown", (e) => { if ((e.key === " " || e.key === "Enter") && !e.repeat) { e.preventDefault(); e.stopPropagation(); start(); } });
   btn.addEventListener("keyup", stop);
   btn.addEventListener("blur", stop);
 }
 
-/* ---------- undo: five seconds to put a candle back ---------- */
-type UndoKind = "done" | "late" | "burn";
-interface UndoEntry { task: Task; kind: UndoKind; removeTimer: number; hideTimer: number }
-let undo: UndoEntry | null = null;
-const undoBox = $("undo");
-
-function hideUndo() {
-  if (undo) { clearTimeout(undo.hideTimer); undo = null; }
-  undoBox.hidden = true;
-}
-
-function undoLast() {
-  if (!undo) return;
-  const u = undo;
-  clearTimeout(u.removeTimer);
-  hideUndo();
-  if (u.kind === "burn") stats.burned--;
-  else { stats.putOut--; if (u.kind === "late") stats.late--; }
-  saveStats(stats);
-  tasks.push(u.task);
-  save(tasks);
-  els.get(u.task.id)?.remove();
-  els.delete(u.task.id);
-  createCard(u.task);
-  audio.rustle(0.3);
-  refresh();
-}
-
-/** The task leaves the list at once (data first, animation follows) and can be put back for 5 seconds. */
-function removeTask(el: HTMLElement, task: Task, ms: number, kind: UndoKind) {
-  hideUndo();
-  tasks = tasks.filter((x) => x.id !== task.id);
-  save(tasks);
-  saveStats(stats);
-  const removeTimer = window.setTimeout(() => { el.remove(); els.delete(task.id); refresh(); }, ms);
-  const hideTimer = window.setTimeout(hideUndo, 5000);
-  undo = { task, kind, removeTimer, hideTimer };
-  $("undo-text").textContent = t(kind === "burn" ? "undoBurned" : "undoPutOut");
-  undoBox.hidden = false;
-  refresh();
-}
-$("undo-btn").addEventListener("click", undoLast);
-
-/** Finish: peel the seal, the candle is put out by hand. */
-function wireSeal(el: HTMLElement, task: Task) {
-  wireHold(el.querySelector<HTMLElement>(".seal")!, 900, () => {
-    el.classList.add("leaving");
-    audio.candleOut();
-    // Past the deadline it is an exorcism: the task is finished late, and it is recorded as late.
-    const late = task.due <= Date.now();
-    stats.putOut++;
-    if (late) stats.late++;
-    removeTask(el, task, 1500, late ? "late" : "done");
-  });
-}
-
-/** Delete: the card is burned. Not counted as finished. */
-function wireBurn(el: HTMLElement, task: Task) {
-  wireHold(el.querySelector<HTMLElement>(".act.burn")!, 900, () => {
-    el.classList.add("burning");
-    audio.burn();
-    stats.burned++;
-    removeTask(el, task, 1600, "burn");
-  });
-}
-
-/** Edit: the title is rewritten on the same paper. */
-function wireRewrite(el: HTMLElement, task: Task) {
-  el.querySelector<HTMLElement>(".act.rewrite")!.addEventListener("click", () => {
-    const h3 = el.querySelector<HTMLElement>("h3")!;
-    if (el.classList.contains("editing")) return;
-    el.classList.add("editing");
-    const input = document.createElement("input");
-    input.className = "rewrite-in";
-    input.maxLength = 40;
-    input.value = task.title;
-    input.setAttribute("aria-label", t("actRewriteTitle"));
-    h3.hidden = true;
-    h3.after(input);
-    input.focus();
-    input.select();
-    let done = false;
-    const close = (commit: boolean) => {
-      if (done) return;
-      done = true;
-      const v = input.value.trim();
-      if (commit && !v) saltError("errTitle");
-      else if (commit && v !== task.title) {
-        task.title = v;
-        h3.textContent = v;
-        save(tasks);
-        audio.rustle(0.3);
-      }
-      input.remove();
-      h3.hidden = false;
-      el.classList.remove("editing");
-    };
-    input.addEventListener("keydown", (e) => {
-      e.stopPropagation();
-      if (e.key === "Enter") close(true);
-      else if (e.key === "Escape") close(false);
-    });
-    input.addEventListener("blur", () => close(true));
-  });
-}
-
-/** Extend: wax is added and the deadline moves with it. */
-function wireWax(el: HTMLElement, task: Task) {
+function wireWax(el: HTMLElement, find: () => Task | undefined) {
   const btn = el.querySelector<HTMLElement>(".act.extend")!;
   const pick = el.querySelector<HTMLSelectElement>(".wax-pick")!;
   const close = () => { pick.hidden = true; btn.hidden = false; pick.value = ""; };
@@ -386,187 +405,210 @@ function wireWax(el: HTMLElement, task: Task) {
     btn.hidden = true;
     pick.hidden = false;
     pick.focus();
-    try { pick.showPicker?.(); } catch { /* not allowed without a gesture on some browsers */ }
+    try { pick.showPicker?.(); } catch { /* not allowed on some browsers */ }
   });
   pick.addEventListener("change", () => {
     const min = Number(pick.value);
-    if (min > 0) {
-      const now = Date.now();
-      if (task.due <= now) {
-        // An extinguished candle is lit again from now. The curse already played and does not play twice.
-        task.created = now;
-        task.due = now + min * 60_000;
-        task.penalty = 0;
-      } else {
-        task.due = Math.min(task.due + min * 60_000, now + MAX_MS);
-      }
-      save(tasks);
-      audio.rustle(0.3);
-      refresh();
-    }
+    const cur = find();
     close();
+    if (min > 0 && cur) extend(cur, min);
   });
   pick.addEventListener("blur", close);
+  pick.addEventListener("keydown", (e) => { if (e.key === "Escape") { e.stopPropagation(); close(); btn.focus(); } });
 }
 
-function boardPoint(e: PointerEvent) {
-  const r = board.getBoundingClientRect();
-  return { x: e.clientX - r.left + board.scrollLeft, y: e.clientY - r.top + board.scrollTop };
-}
+/* ---------- drag between columns ---------- */
+const sortKey = (a: Task, b: Task) =>
+  a.status === "done" ? (b.doneAt ?? 0) - (a.doneAt ?? 0) : a.due - b.due;
 
-function wireDrag(el: HTMLElement, task: Task) {
-  let ox = 0, oy = 0, lastRustle = 0, lastX = 0, lastY = 0;
+function wireDrag(el: HTMLElement, find: () => Task | undefined) {
+  let sx = 0, sy = 0, ox = 0, oy = 0, active = false, armed = false;
+  let ph: HTMLElement | null = null;
+  let target: Status | null = null;
+  let lastRustle = 0, lastX = 0, lastY = 0;
+
+  const placeIn = (status: Status, task: Task) => {
+    const list = lists.get(status)!;
+    const hypo = { ...task, status };
+    const others = tasks.filter((x) => x.status === status && x.id !== task.id);
+    const idx = others.filter((o) => sortKey(o, hypo) <= 0).length;
+    const before = others.sort(sortKey)[idx];
+    const ref = before ? els.get(before.id) ?? null : null;
+    if (ref && ref.parentElement === list) list.insertBefore(ph!, ref); else list.appendChild(ph!);
+  };
+
   el.addEventListener("pointerdown", (e) => {
-    if ((e.target as HTMLElement).closest(".seal, .act, .rewrite-in, .wax-pick")) return;
-    dragging = true;
+    if (e.button !== 0 || cursing) return;
+    if ((e.target as HTMLElement).closest("button, select, .seal, a, input, textarea")) return;
+    const r = el.getBoundingClientRect();
+    sx = lastX = e.clientX; sy = lastY = e.clientY;
+    ox = e.clientX - r.left; oy = e.clientY - r.top;
+    armed = true;
     el.setPointerCapture(e.pointerId);
-    el.classList.add("drag");
-    el.classList.remove("slide");
-    const p = boardPoint(e);
-    ox = p.x - el.offsetLeft;
-    oy = p.y - el.offsetTop;
-    lastX = e.clientX; lastY = e.clientY;
-    audio.rustle(0.3);
   });
+
   el.addEventListener("pointermove", (e) => {
-    if (!el.classList.contains("drag")) return;
-    const p = boardPoint(e);
-    let x = p.x - ox;
-    let y = p.y - oy;
+    if (!armed) return;
+    const task = find();
+    if (!task) return;
+    if (!active) {
+      if (Math.hypot(e.clientX - sx, e.clientY - sy) < 6) return;
+      active = dragging = true;
+      const r = el.getBoundingClientRect();
+      ph = document.createElement("div");
+      ph.className = "placeholder";
+      ph.style.height = `${r.height}px`;
+      el.before(ph);
+      el.style.width = `${r.width}px`;
+      el.classList.add("drag");
+      target = task.status;
+      audio.rustle(0.3);
+    }
+    let x = e.clientX - ox, y = e.clientY - oy;
     // Rarely, something pulls the card out of your hand.
     if (Math.random() < 0.015) { x += (Math.random() - 0.5) * 36; y += (Math.random() - 0.5) * 24; }
-    x = Math.max(0, Math.min(board.clientWidth - CARD_W, x));
-    y = Math.max(TOP_PAD - 12, y);
     el.style.left = `${x}px`;
     el.style.top = `${y}px`;
-    // near the edge, the board scrolls with you
-    const r = board.getBoundingClientRect();
-    if (e.clientY > r.bottom - 40) board.scrollTop += 14;
-    else if (e.clientY < r.top + 40) board.scrollTop -= 14;
-    const speed = Math.hypot(e.clientX - lastX, e.clientY - lastY);
-    lastX = e.clientX; lastY = e.clientY;
+    const col = document.elementFromPoint(e.clientX, e.clientY)?.closest<HTMLElement>(".col");
+    const s = (col?.dataset.status as Status | undefined) ?? target;
+    document.querySelectorAll(".col.over").forEach((c) => c !== col && c.classList.remove("over"));
+    col?.classList.add("over");
+    if (s && s !== target) { target = s; placeIn(s, task); }
+    // near the top or bottom of a column, it scrolls with you
+    const list = col?.querySelector<HTMLElement>(".list");
+    if (list) {
+      const lr = list.getBoundingClientRect();
+      if (e.clientY > lr.bottom - 36) list.scrollTop += 12;
+      else if (e.clientY < lr.top + 36) list.scrollTop -= 12;
+    }
     const now = performance.now();
     if (now - lastRustle > 110) {
       lastRustle = now;
-      audio.rustle(Math.min(1, speed / 40));
+      audio.rustle(Math.min(1, Math.hypot(e.clientX - lastX, e.clientY - lastY) / 40));
       // the other candles shiver, as if someone is standing close
       for (const [id, other] of els) {
-        if (id !== task.id && Math.random() < 0.25) {
+        if (id !== task.id && Math.random() < 0.2) {
           other.classList.remove("uneasy"); void other.offsetWidth; other.classList.add("uneasy");
         }
       }
     }
+    lastX = e.clientX; lastY = e.clientY;
   });
-  const end = () => {
-    if (!el.classList.contains("drag")) return;
+
+  const end = (drop: boolean) => {
+    armed = false;
+    if (!active) return;
+    active = dragging = false;
     el.classList.remove("drag");
-    dragging = false;
-    task.x = el.offsetLeft; task.y = el.offsetTop;
-    save(tasks);
-    // sometimes it does not stay where you put it
-    if (Math.random() < 0.25) {
-      setTimeout(() => {
-        if (!els.has(task.id) || el.classList.contains("drag")) return;
-        el.classList.add("slide");
-        task.x = Math.max(0, Math.min(board.clientWidth - CARD_W, task.x + (Math.random() - 0.5) * 30));
-        task.y = Math.max(TOP_PAD - 12, task.y + (Math.random() - 0.5) * 20);
-        el.style.left = `${task.x}px`; el.style.top = `${task.y}px`;
-        audio.rustle(0.4);
-        save(tasks);
-      }, 700);
-    }
+    el.style.left = el.style.top = el.style.width = "";
+    document.querySelectorAll(".col.over").forEach((c) => c.classList.remove("over"));
+    ph?.remove();
+    ph = null;
+    const task = find();
+    if (drop && task && target && target !== task.status) setStatus(task, target);
+    else render();
+    el.focus({ preventScroll: true });
   };
-  el.addEventListener("pointerup", end);
-  el.addEventListener("pointercancel", end);
+  el.addEventListener("pointerup", () => end(true));
+  el.addEventListener("pointercancel", () => end(false));
+  el.addEventListener("lostpointercapture", () => end(true));
 }
 
-/** Keyboard: focus a card, move it with the arrow keys (Shift for bigger steps). */
-function wireKeys(el: HTMLElement, task: Task) {
-  let saveTimer = 0;
-  el.addEventListener("keydown", (e) => {
-    if (e.target !== el) return;
-    const step = e.shiftKey ? 56 : 16;
-    const d: Record<string, [number, number]> = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] };
-    const m = d[e.key];
-    if (!m) return;
-    e.preventDefault();
-    task.x = Math.max(0, Math.min(board.clientWidth - CARD_W, el.offsetLeft + m[0]));
-    task.y = Math.max(TOP_PAD - 12, el.offsetTop + m[1]);
-    el.classList.remove("slide");
-    el.style.left = `${task.x}px`;
-    el.style.top = `${task.y}px`;
-    el.scrollIntoView({ block: "nearest" });
-    audio.rustle(0.15);
-    clearTimeout(saveTimer);
-    saveTimer = window.setTimeout(() => save(tasks), 300);
-  });
+/* ---------- rendering ---------- */
+function render() {
+  if (dragging) return;
+  const focused = document.activeElement as HTMLElement | null;
+  const alive = new Set(tasks.map((x) => x.id));
+  for (const [id, el] of els) {
+    if (!alive.has(id) && !el.classList.contains("burning")) { el.remove(); els.delete(id); }
+  }
+  for (const s of STATUSES) {
+    const list = lists.get(s)!;
+    const items = tasks.filter((x) => x.status === s).sort(sortKey);
+    items.forEach((task, i) => {
+      const el = els.get(task.id) ?? createCard(task);
+      // move only what is out of place, so focus and scroll stay put
+      const at = [...list.children].filter((c) => !c.classList.contains("burning"))[i];
+      if (at !== el) list.insertBefore(el, at ?? null);
+    });
+    list.closest(".col")!.classList.toggle("empty", items.length === 0);
+    $(`n-${s}`).textContent = String(items.length);
+  }
+  if (focused && document.contains(focused) && document.activeElement !== focused) focused.focus({ preventScroll: true });
+  refresh();
 }
 
-/* ---------- ticking ---------- */
 // The counting song stays Japanese in every language.
 const SONG = ["ひとつ", "ふたつ", "みっつ", "よっつ", "いつつ", "むっつ", "ななつ", "やっつ", "ここのつ", "とお"];
 function refresh() {
   const now = Date.now();
   $("empty").classList.toggle("hide", tasks.length > 0);
-  $("haunted").textContent = String(tasks.filter((x) => x.cursed && x.due <= now).length);
+  $("haunted").textContent = String(tasks.filter((x) => x.cursed && isOverdue(x, now)).length);
   $("putout").textContent = String(stats.putOut);
   for (const task of tasks) {
     const el = els.get(task.id);
     if (!el) continue;
+    const done = task.status === "done";
     const left = task.due - now;
-    const vp = visualPct(task, now); // what the candle looks like (hauntings shorten it)
-    const tp = truePct(task, now);   // what the clock says (never touched)
-    const wax = el.querySelector<HTMLElement>(".wax")!;
-    wax.style.height = `${Math.max(6, vp * 100)}%`;
-    el.classList.toggle("low", left > 0 && vp < 0.2);
-    el.classList.toggle("urgent", left > 0 && tp < 0.2);
-    el.classList.toggle("out", left <= 0);
+    const out = !done && left <= 0;
+    const vp = done ? 0.06 : visualPct(task, now); // what the candle looks like (hauntings shorten it)
+    const tp = truePct(task, now);                 // what the clock says (never touched)
+    el.querySelector<HTMLElement>(".wax")!.style.height = `${Math.max(6, vp * 100)}%`;
+    el.classList.toggle("done", done);
+    el.classList.toggle("low", !done && left > 0 && vp < 0.2);
+    el.classList.toggle("urgent", !done && left > 0 && tp < 0.2);
+    el.classList.toggle("out", out);
     el.setAttribute("aria-label", t("cardAria", { title: task.title }));
-    el.querySelector(".left")!.textContent = task.cursed && left <= 0 ? t("tooLate") : formatLeft(left);
-    el.querySelector(".when")!.textContent = t("dueAt", { when: formatDue(task.due, now) });
+    el.querySelector("h3")!.textContent = task.title;
+    const m = task.assignee ? members.find((x) => x.id === task.assignee) : undefined;
+    el.querySelector(".who")!.innerHTML = m ? `<span class="avatar" aria-hidden="true">${esc([...m.name][0] ?? "")}</span>${esc(m.name)}` : "";
+    el.querySelector(".note")!.textContent = task.note ?? "";
+    if (done) {
+      el.querySelector(".left")!.textContent = t("doneAt", { when: formatDue(task.doneAt ?? now, now) });
+      el.querySelector(".when")!.textContent = task.late ? t("doneLate") : "";
+    } else {
+      el.querySelector(".left")!.textContent = task.cursed && out ? t("tooLate") : formatLeft(left);
+      el.querySelector(".when")!.textContent = t("dueAt", { when: formatDue(task.due, now) });
+    }
     // count song for the final ten seconds
-    el.querySelector(".song")!.textContent = left > 0 && left <= 10_000 ? SONG[10 - Math.ceil(left / 1000)] ?? "" : "";
+    el.querySelector(".song")!.textContent = !done && left > 0 && left <= 10_000 ? SONG[10 - Math.ceil(left / 1000)] ?? "" : "";
     const seal = el.querySelector<HTMLElement>(".seal")!;
-    const late = left <= 0;
-    seal.querySelector("span")!.textContent = t(late ? "exorcise" : "seal");
-    seal.setAttribute("aria-label", t(late ? "exorciseAria" : "sealAria"));
+    seal.querySelector("span")!.textContent = t(out ? "exorcise" : "seal");
+    seal.setAttribute("aria-label", t(out ? "exorciseAria" : "sealAria"));
+    const i = STATUSES.indexOf(task.status);
+    const prev = el.querySelector<HTMLButtonElement>(".mv.prev")!;
+    const next = el.querySelector<HTMLButtonElement>(".mv.next")!;
+    prev.hidden = i === 0;
+    next.hidden = i === STATUSES.length - 1;
+    if (i > 0) { const l = t("moveTo", { col: t(COL_KEY[STATUSES[i - 1]]) }); prev.setAttribute("aria-label", l); prev.title = l; }
+    if (i < 2) { const l = t("moveTo", { col: t(COL_KEY[STATUSES[i + 1]]) }); next.setAttribute("aria-label", l); next.title = l; }
   }
 }
 
 /** Hauntings eat the candle, never the deadline. */
 function shortenCandle(task: Task, ratio: number) {
-  const now = Date.now();
-  const visualLeft = Math.max(0, task.due - now - (task.penalty ?? 0));
-  task.penalty = (task.penalty ?? 0) + visualLeft * ratio;
+  const visualLeft = Math.max(0, task.due - Date.now() - task.penalty);
+  task.penalty += visualLeft * ratio;
 }
 
 async function checkExpiry() {
-  if (cursing || dragging) return;
-  const task = tasks.find((x) => !x.cursed && x.due <= Date.now());
+  if (cursing || dragging || isOpen()) return;
+  const now = Date.now();
+  const task = tasks.find((x) => !x.cursed && isOverdue(x, now));
   if (!task) return;
   cursing = true;
   task.cursed = true;
-  save(tasks);
+  persist();
   refresh();
-  $("live").textContent = t("liveOut", { title: task.title });
+  announce(t("liveOut", { title: task.title }));
   await playCurse(task.title, isSafe());
-  // The curse spreads: the nearest living candle looks shorter. No explanation is given.
-  const el = els.get(task.id);
-  if (el) {
-    let best: Task | null = null, bd = Infinity;
-    for (const o of tasks) {
-      if (o.due <= Date.now() || o.id === task.id) continue;
-      const oe = els.get(o.id);
-      if (!oe) continue;
-      const d = Math.hypot(oe.offsetLeft - el.offsetLeft, oe.offsetTop - el.offsetTop);
-      if (d < bd) { bd = d; best = o; }
-    }
-    if (best) {
-      shortenCandle(best, 0.25);
-      save(tasks);
-      els.get(best.id)?.classList.add("uneasy");
-      audio.whisper();
-    }
+  // The curse spreads: the open candle with the nearest deadline looks shorter. No explanation is given.
+  const next = tasks.filter((x) => x.status !== "done" && x.due > Date.now()).sort((a, b) => a.due - b.due)[0];
+  if (next) {
+    shortenCandle(next, 0.25);
+    persist();
+    els.get(next.id)?.classList.add("uneasy");
+    audio.whisper();
   }
   refresh();
   cursing = false;
@@ -576,45 +618,56 @@ async function checkExpiry() {
 const hooks: PresenceHooks = {
   urgency() {
     const now = Date.now();
-    const live = tasks.filter((x) => x.due > now);
+    const live = tasks.filter((x) => x.status !== "done" && x.due > now);
     return live.length ? Math.min(...live.map((x) => visualPct(x, now))) : 1;
   },
-  cards: () => [...els.values()].filter((c) => !c.classList.contains("editing")),
+  // nothing moves while the user is writing or dragging
+  cards: () => (isOpen() || dragging ? [] : [...els.values()].filter((c) => !c.classList.contains("done"))),
   safe: isSafe,
   onNoticed() {
     // Rule broken ("do not look behind you"): a random candle looks a tenth shorter. The clock does not change.
     const now = Date.now();
-    const live = tasks.filter((x) => x.due > now);
+    const live = tasks.filter((x) => x.status !== "done" && x.due > now);
     if (!live.length) return;
     const task = live[Math.floor(Math.random() * live.length)];
     shortenCandle(task, 0.1);
-    save(tasks);
+    persist();
     els.get(task.id)?.classList.add("uneasy");
     refresh();
   },
 };
 startPresence(hooks);
 
-/* ---------- keyboard shortcuts ---------- */
+/* ---------- keyboard shortcuts (listed on the help page) ---------- */
 const typing = (e: KeyboardEvent) => {
   const el = e.target as HTMLElement;
   return el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement || el.isContentEditable;
 };
 addEventListener("keydown", (e) => {
-  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z" && !typing(e)) {
+  if (gateUp() || isOpen() || cursing || typing(e) || e.altKey) return;
+  const mod = e.ctrlKey || e.metaKey;
+  if (mod && e.key.toLowerCase() === "z") {
     if (undo) { e.preventDefault(); undoLast(); }
-  } else if ((e.key === "n" || e.key === "/") && !e.ctrlKey && !e.metaKey && !e.altKey && !typing(e)) {
-    e.preventDefault();
-    titleIn.focus();
+    return;
+  }
+  if (mod) return;
+  if (e.key === "n" || e.key === "N" || e.key === "/") { e.preventDefault(); openDialog(); }
+  else if (e.key === "?") { e.preventDefault(); location.href = "help.html"; }
+  else if (e.key === "1" || e.key === "2" || e.key === "3") {
+    // jump to the first card of a column
+    const first = lists.get(STATUSES[Number(e.key) - 1])!.querySelector<HTMLElement>(".card");
+    if (first) { e.preventDefault(); first.focus(); }
   }
 });
 
 /* ---------- boot ---------- */
 setLang(langSel.value as Lang);
-for (const task of tasks) createCard(task);
+render();
 changeLang(langSel.value as Lang);
-if (loadInfo.recovered) notify("errBroken", false, 9000);
+if (loadInfo.recovered) notify("errBroken", 9000);
 setInterval(() => { refresh(); void checkExpiry(); }, 1000);
+// a tab coming back from sleep checks the deadlines at once
+document.addEventListener("visibilitychange", () => { if (!document.hidden) { refresh(); void checkExpiry(); } });
 
 if (new URLSearchParams(location.search).has("debug")) {
   (window as unknown as Record<string, unknown>).__t = {

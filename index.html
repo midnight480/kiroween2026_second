@@ -23,21 +23,24 @@
   </div>
   <header id="top">
     <div class="brand"><b>灯</b> Tomoshibi <small data-i18n="subtitle"></small></div>
-    <form id="add" autocomplete="off">
-      <input id="title" type="text" maxlength="40" data-i18n-ph="titlePh" required />
-      <select id="burn" data-i18n-aria="burnsFor">
-        <option value="1" data-i18n="burn1"></option>
-        <option value="30" data-i18n="burn30"></option>
-        <option value="120" data-i18n="burn120" selected></option>
-        <option value="1440" data-i18n="burn1440"></option>
-        <option value="4320" data-i18n="burn4320"></option>
-        <option value="custom" data-i18n="burnCustom"></option>
-      </select>
-      <input id="due" type="datetime-local" data-i18n-aria="dueAria" hidden />
-      <button class="pumpkin-btn" type="submit" data-i18n-title="addTitle" data-i18n-aria="addTitle"></button>
-    </form>
+    <button type="button" id="new" class="new-btn" data-i18n-title="newCandleTitle">
+      <span class="pumpkin-btn" aria-hidden="true"></span><span data-i18n="newCandle"></span>
+    </button>
   </header>
-  <main id="board"></main>
+  <main id="board">
+    <section class="col" data-status="todo" aria-labelledby="h-todo">
+      <header><span class="mark" aria-hidden="true">未</span><h2 id="h-todo" data-i18n="colTodo"></h2><span class="n" id="n-todo">0</span></header>
+      <div class="list"></div><p class="col-empty" data-i18n="colEmpty"></p>
+    </section>
+    <section class="col" data-status="doing" aria-labelledby="h-doing">
+      <header><span class="mark" aria-hidden="true">灯</span><h2 id="h-doing" data-i18n="colDoing"></h2><span class="n" id="n-doing">0</span></header>
+      <div class="list"></div><p class="col-empty" data-i18n="colEmpty"></p>
+    </section>
+    <section class="col" data-status="done" aria-labelledby="h-done">
+      <header><span class="mark" aria-hidden="true">消</span><h2 id="h-done" data-i18n="colDone"></h2><span class="n" id="n-done">0</span></header>
+      <div class="list"></div><p class="col-empty" data-i18n="colEmpty"></p>
+    </section>
+  </main>
   <div id="empty">
     <svg class="child" viewBox="0 0 60 90" aria-hidden="true"><circle cx="30" cy="20" r="14" fill="#c9bfa6"/><path d="M12 24 Q30 -4 48 24 L48 30 Q30 6 12 30Z" fill="#050505"/><path d="M14 90 L18 44 Q30 38 42 44 L46 90Z" fill="#a3331f"/><circle cx="25" cy="21" r="1.6" fill="#050505"/><circle cx="35" cy="21" r="1.6" fill="#050505"/></svg>
     <p><span data-i18n="emptyMain"></span><br /><small><span data-i18n="emptySub1"></span><br /><span data-i18n="emptySub2"></span></small></p>
@@ -52,6 +55,7 @@
     <span class="count out" data-i18n-title="putOutTitle"><span data-i18n="putOut"></span> <b id="putout">0</b></span>
     <label data-i18n-title="safeTitle"><input type="checkbox" id="safe" /> <span data-i18n="safe"></span></label>
     <label><input type="checkbox" id="mute" /> <span data-i18n="mute"></span></label>
+    <a class="helplink" href="help.html" data-i18n="help" data-i18n-title="helpTitle"></a>
     <label class="pick"><span data-i18n="theme"></span>
       <select id="theme">
         <option value="system" data-i18n="themeSystem"></option>
@@ -63,6 +67,55 @@
       <select id="lang"><option value="en">English</option><option value="ja">日本語</option></select>
     </label>
   </footer>
+  <dialog id="task-dialog" aria-labelledby="dlg-title">
+    <form id="task-form" method="dialog" novalidate autocomplete="off">
+      <header>
+        <h2 id="dlg-title"></h2>
+        <button type="button" class="x" id="dlg-close" data-i18n-aria="dlgClose">×</button>
+      </header>
+      <label class="f"><span data-i18n="fTitle"></span>
+        <input id="f-title" type="text" maxlength="80" data-i18n-ph="fTitlePh" required />
+      </label>
+      <div class="f">
+        <label for="f-due" data-i18n="fDue"></label>
+        <input id="f-due" type="datetime-local" />
+        <div class="chips" role="group" data-i18n-aria="fDueQuick">
+          <button type="button" data-min="1" data-i18n="chip1"></button>
+          <button type="button" data-min="30" data-i18n="chip30"></button>
+          <button type="button" data-min="120" data-i18n="chip120"></button>
+          <button type="button" data-min="1440" data-i18n="chip1440"></button>
+          <button type="button" data-min="4320" data-i18n="chip4320"></button>
+        </div>
+        <small id="f-due-hint" aria-live="polite"></small>
+      </div>
+      <div class="row2">
+        <div class="f"><label for="f-assignee" data-i18n="fAssignee"></label>
+          <select id="f-assignee"></select>
+          <div id="f-newmember" class="newmember" hidden>
+            <input id="f-member-name" type="text" maxlength="30" data-i18n-ph="fMemberPh" data-i18n-aria="fMemberPh" />
+            <button type="button" id="f-member-add" data-i18n="fMemberAdd"></button>
+          </div>
+        </div>
+        <div class="f"><label for="f-status" data-i18n="fStatus"></label>
+          <select id="f-status">
+            <option value="todo" data-i18n="colTodo"></option>
+            <option value="doing" data-i18n="colDoing"></option>
+            <option value="done" data-i18n="colDone"></option>
+          </select>
+        </div>
+      </div>
+      <label class="f"><span data-i18n="fNote"></span>
+        <textarea id="f-note" rows="4" maxlength="500" data-i18n-ph="fNotePh"></textarea>
+        <small id="f-note-count" aria-hidden="true"></small>
+      </label>
+      <p id="f-err" class="form-err" role="alert" hidden></p>
+      <footer>
+        <div class="salt-wrap"><div class="salt"></div></div>
+        <button type="button" id="dlg-cancel" class="ghost" data-i18n="cancel"></button>
+        <button type="submit" id="dlg-ok" class="btn"></button>
+      </footer>
+    </form>
+  </dialog>
   <div id="curse" hidden></div>
   <script type="module" src="/src/main.ts"></script>
 </body>

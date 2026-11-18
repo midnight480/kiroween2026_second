@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="dark light" />
+  <title>Help — Tomoshibi 灯</title>
+</head>
+<body>
+  <main class="doc">
+    <div class="top">
+      <a href="./"><span class="en">← Back to the ledger</span><span class="ja">← 帳面に戻る</span></a>
+      <div class="pickers">
+        <label><span class="en">Theme</span><span class="ja">表示</span>
+          <select id="theme">
+            <option value="system">Auto / 自動</option><option value="light">Light / ライト</option><option value="dark">Dark / ダーク</option>
+          </select>
+        </label>
+        <label><span class="en">Language</span><span class="ja">言語</span>
+          <select id="lang"><option value="en">English</option><option value="ja">日本語</option></select>
+        </label>
+      </div>
+    </div>
+
+    <h1><b>灯</b><span class="en">How to use the ledger</span><span class="ja">帳面の使い方</span></h1>
+    <p class="en">Every task is a candle. Its length is the time left before the deadline. Finish it before it burns out.</p>
+    <p class="ja">ひとつの用事が、ひとつの蝋燭です。蝋燭の長さが、期限までの残り時間です。燃え尽きる前に片付けてください。</p>
+
+    <h2><span class="en">Keyboard shortcuts</span><span class="ja">ショートカットキー</span></h2>
+    <table>
+      <thead>
+        <tr class="en"><th>Key</th><th>Where</th><th>What it does</th></tr>
+        <tr class="ja"><th>キー</th><th>場所</th><th>動き</th></tr>
+      </thead>
+      <tbody>
+        <tr class="en"><td><kbd>N</kbd> or <kbd>/</kbd></td><td>Anywhere</td><td>Light a new candle (opens the form)</td></tr>
+        <tr class="ja"><td><kbd>N</kbd> か <kbd>/</kbd></td><td>どこでも</td><td>新しい灯をともす (登録画面を開く)</td></tr>
+        <tr class="en"><td><kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>Enter</kbd></td><td>The form</td><td>Save</td></tr>
+        <tr class="ja"><td><kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>Enter</kbd></td><td>登録画面</td><td>保存する</td></tr>
+        <tr class="en"><td><kbd>Esc</kbd></td><td>The form</td><td>Close without saving</td></tr>
+        <tr class="ja"><td><kbd>Esc</kbd></td><td>登録画面</td><td>保存せずに閉じる</td></tr>
+        <tr class="en"><td><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd></td><td>Anywhere</td><td>Jump to the first card of To do / In progress / Done</td></tr>
+        <tr class="ja"><td><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd></td><td>どこでも</td><td>未着手 / 進行中 / 完了 の最初のカードへ移る</td></tr>
+        <tr class="en"><td><kbd>↑</kbd> <kbd>↓</kbd></td><td>A card</td><td>Previous / next card in the column</td></tr>
+        <tr class="ja"><td><kbd>↑</kbd> <kbd>↓</kbd></td><td>カード</td><td>同じ列の前 / 次のカードへ</td></tr>
+        <tr class="en"><td><kbd>←</kbd> <kbd>→</kbd></td><td>A card</td><td>Move it to the previous / next column</td></tr>
+        <tr class="ja"><td><kbd>←</kbd> <kbd>→</kbd></td><td>カード</td><td>前 / 次の列へ移す</td></tr>
+        <tr class="en"><td><kbd>Enter</kbd></td><td>A card</td><td>Edit it</td></tr>
+        <tr class="ja"><td><kbd>Enter</kbd></td><td>カード</td><td>編集する</td></tr>
+        <tr class="en"><td>Hold <kbd>Space</kbd> / <kbd>Enter</kbd></td><td>The seal, Burn</td><td>Peel the seal (finish) / burn the card (delete)</td></tr>
+        <tr class="ja"><td><kbd>Space</kbd> / <kbd>Enter</kbd> を長押し</td><td>封、燃やす</td><td>封を剥がす (完了) / 札を燃やす (削除)</td></tr>
+        <tr class="en"><td><kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>Z</kbd></td><td>Anywhere, within 5 seconds</td><td>Put the last finished or burned card back</td></tr>
+        <tr class="ja"><td><kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>Z</kbd></td><td>どこでも (5秒以内)</td><td>直前に完了・燃やしたカードを戻す</td></tr>
+        <tr class="en"><td><kbd>?</kbd></td><td>Anywhere</td><td>Open this page</td></tr>
+        <tr class="ja"><td><kbd>?</kbd></td><td>どこでも</td><td>このページを開く</td></tr>
+      </tbody>
+    </table>
+
+    <h2><span class="en">The board</span><span class="ja">看板</span></h2>
+    <ul class="en">
+      <li><b>To do</b>, <b>In progress</b> and <b>Done</b>. Drag a card to another column, or use the ← → buttons on the card.</li>
+      <li>Open columns are sorted by deadline, nearest first. Done is sorted by when you finished.</li>
+      <li>A candle that burned out is marked 遅. It stays in its column until you deal with it.</li>
+    </ul>
+    <ul class="ja">
+      <li><b>未着手</b>、<b>進行中</b>、<b>完了</b>の3列です。カードを別の列へドラッグするか、カードの ← → ボタンで移します。</li>
+      <li>未着手と進行中は、期限の近い順に並びます。完了は、終えた順に並びます。</li>
+      <li>燃え尽きた灯には「遅」の印が付きます。片付けるまで、その列に残ります。</li>
+    </ul>
+
+    <h2><span class="en">Lighting a candle</span><span class="ja">灯をともす</span></h2>
+    <ul class="en">
+      <li>Press <b>New candle</b> (or <kbd>N</kbd>). Nothing is added until you press <b>Light the candle</b>.</li>
+      <li>Title and deadline are required. Assignee, status and notes are optional.</li>
+      <li>The deadline must be at least a minute away and within a year. Pick a time, or use a quick length (30 min, 2 hours, …).</li>
+      <li>Assignees are chosen from a list. Add a new name with <b>+ New member…</b>. Names are kept on this device.</li>
+    </ul>
+    <ul class="ja">
+      <li><b>新しい灯</b> (か <kbd>N</kbd>) を押します。<b>灯をともす</b>を押すまで、何も追加されません。</li>
+      <li>件名と期限は必須です。担当者、状態、メモは任意です。</li>
+      <li>期限は1分以上先、1年以内です。日時を選ぶか、長さ (30分、2時間 …) のボタンを使います。</li>
+      <li>担当者は一覧から選びます。新しい名前は <b>+ 担当者を追加…</b> で足します。名前はこの端末に保存されます。</li>
+    </ul>
+
+    <h2><span class="en">On each card</span><span class="ja">カードでできること</span></h2>
+    <table>
+      <tbody>
+        <tr class="en"><td><b>Hold to peel the seal</b></td><td>Finish. The card moves to Done. After the deadline it reads <b>Hold to exorcise</b>, and the task is recorded as late.</td></tr>
+        <tr class="ja"><td><b>長押しで封を剥がす</b></td><td>完了。カードが完了の列へ移ります。期限後は<b>長押しでお祓い</b>になり、遅れて完了として記録されます。</td></tr>
+        <tr class="en"><td><b>Rewrite</b></td><td>Edit the title, deadline, assignee, status and notes.</td></tr>
+        <tr class="ja"><td><b>書き直す</b></td><td>件名、期限、担当者、状態、メモを編集します。</td></tr>
+        <tr class="en"><td><b>Add wax</b></td><td>Extend the deadline. A burned-out candle is lit again from now.</td></tr>
+        <tr class="ja"><td><b>蝋を足す</b></td><td>期限を延ばします。燃え尽きた灯は、いまから灯し直します。</td></tr>
+        <tr class="en"><td><b>Burn</b> (hold)</td><td>Delete. Burned cards are not counted as finished.</td></tr>
+        <tr class="ja"><td><b>燃やす</b> (長押し)</td><td>削除。燃やした札は、完了には数えません。</td></tr>
+      </tbody>
+    </table>
+    <p class="en">For five seconds after finishing or burning, <b>Put it back</b> appears at the bottom of the screen.</p>
+    <p class="ja">完了や削除のあと5秒間、画面の下に<b>灯を戻す</b>が出ます。</p>
+
+    <h2><span class="en">The candle and the clock</span><span class="ja">蝋燭と時計</span></h2>
+    <p class="en">Sometimes a candle looks shorter than it should. The time written on the card is always the true time left. Trust the writing.</p>
+    <p class="ja">ときどき、蝋燭が本来より短く見えることがあります。カードに書かれた時間は、いつも本当の残り時間です。文字のほうを信じてください。</p>
+
+    <h2><span class="en">Safety</span><span class="ja">安全のために</span></h2>
+    <ul class="en">
+      <li><b>Safe mode</b> removes flashes, the figure and the jump scare. It turns on by itself if your system asks for reduced motion.</li>
+      <li><b>Mute</b> silences every sound.</li>
+      <li>Everything still works with both turned on.</li>
+    </ul>
+    <ul class="ja">
+      <li><b>セーフモード</b>は、閃光、人影、驚かせる演出をなくします。端末で「視差効果を減らす」を設定していると、自動でオンになります。</li>
+      <li><b>消音</b>は、全ての音を止めます。</li>
+      <li>どちらをオンにしても、全ての機能を使えます。</li>
+    </ul>
+
+    <h2><span class="en">Your data</span><span class="ja">データ</span></h2>
+    <p class="en">Tasks are saved in this browser only (localStorage). Nothing is sent anywhere. Clearing site data erases them.</p>
+    <p class="ja">タスクはこのブラウザの中 (localStorage) だけに保存されます。どこにも送られません。サイトのデータを消すと、タスクも消えます。</p>
+  </main>
+  <script type="module" src="/src/help.ts"></script>
+</body>
+</html>
