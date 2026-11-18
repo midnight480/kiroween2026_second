@@ -285,34 +285,34 @@ body.safe #dark { background: radial-gradient(circle 420px at var(--mx, 50%) var
 .acts .mv[hidden] { display: none; }
 .acts .mv:focus-visible { outline: 2px solid var(--flame); outline-offset: 2px; }
 /* the task dialog: a blank ofuda that you write on */
-#task-dialog { border: 1px solid var(--ofuda-line); background: var(--paper); color: var(--ink); padding: 0; width: min(580px, calc(100vw - 24px)); max-height: calc(100vh - 24px); overflow: auto; box-shadow: 0 24px 70px #000c, var(--card-shadow); background-image: repeating-linear-gradient(0deg, #0000 0 3px, #0000000a 3px 4px); }
-#task-dialog::backdrop { background: rgba(5, 3, 3, .74); backdrop-filter: blur(2px); }
-#task-form { position: relative; padding: 22px 24px 16px; }
-#task-form::before { content: ""; position: absolute; top: 0; left: 36px; width: 3px; height: 14px; background: var(--shu); }
-#task-form > header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
-#task-form h2 { margin: 0; font-size: 18px; font-weight: 600; letter-spacing: .12em; }
-#task-form .x { background: transparent; border: 0; color: var(--ink-soft); font-size: 24px; line-height: 1; cursor: pointer; padding: 0 4px; }
-#task-form .x:hover { color: var(--shu); }
+:is(#task-dialog, #proj-dialog) { border: 1px solid var(--ofuda-line); background: var(--paper); color: var(--ink); padding: 0; width: min(580px, calc(100vw - 24px)); max-height: calc(100vh - 24px); overflow: auto; box-shadow: 0 24px 70px #000c, var(--card-shadow); background-image: repeating-linear-gradient(0deg, #0000 0 3px, #0000000a 3px 4px); }
+:is(#task-dialog, #proj-dialog)::backdrop { background: rgba(5, 3, 3, .74); backdrop-filter: blur(2px); }
+:is(#task-form, #proj-form) { position: relative; padding: 22px 24px 16px; }
+:is(#task-form, #proj-form)::before { content: ""; position: absolute; top: 0; left: 36px; width: 3px; height: 14px; background: var(--shu); }
+:is(#task-form, #proj-form) > header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+:is(#task-form, #proj-form) h2 { margin: 0; font-size: 18px; font-weight: 600; letter-spacing: .12em; }
+:is(#task-form, #proj-form) .x { background: transparent; border: 0; color: var(--ink-soft); font-size: 24px; line-height: 1; cursor: pointer; padding: 0 4px; }
+:is(#task-form, #proj-form) .x:hover { color: var(--shu); }
 .f { display: block; margin: 0 0 12px; }
 .f > span, .f > label { display: block; margin-bottom: 4px; font-size: 12px; letter-spacing: .12em; color: var(--ink-soft); }
-#task-form input[type=text], #task-form input[type=datetime-local], #task-form select, #task-form textarea { width: 100%; background: #efe6cf; color: #1a1410; border: 1px solid var(--ink-soft); padding: 7px 9px; font: inherit; font-size: 14px; border-radius: 2px; color-scheme: light; }
-#task-form textarea { resize: vertical; min-height: 84px; }
-#task-form input:focus, #task-form select:focus, #task-form textarea:focus { outline: 2px solid var(--shu); outline-offset: 0; }
-#task-form small { display: block; margin-top: 4px; font-size: 12px; color: var(--ink-soft); }
+:is(#task-form, #proj-form) input[type=text], :is(#task-form, #proj-form) input[type=datetime-local], :is(#task-form, #proj-form) select, :is(#task-form, #proj-form) textarea { width: 100%; background: #efe6cf; color: #1a1410; border: 1px solid var(--ink-soft); padding: 7px 9px; font: inherit; font-size: 14px; border-radius: 2px; color-scheme: light; }
+:is(#task-form, #proj-form) textarea { resize: vertical; min-height: 64px; }
+:is(#task-form, #proj-form) input:focus, :is(#task-form, #proj-form) select:focus, :is(#task-form, #proj-form) textarea:focus { outline: 2px solid var(--shu); outline-offset: 0; }
+:is(#task-form, #proj-form) small { display: block; margin-top: 4px; font-size: 12px; color: var(--ink-soft); }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-.chips button, .newmember button, #task-form .ghost { background: transparent; border: 1px solid var(--ink-soft); color: var(--ink); padding: 3px 10px; font: inherit; font-size: 12px; letter-spacing: .06em; cursor: pointer; }
-.chips button:hover, .newmember button:hover, #task-form .ghost:hover { background: var(--ink-soft); color: var(--paper); }
-.chips button:focus-visible, .newmember button:focus-visible, #task-form .ghost:focus-visible, #task-form .btn:focus-visible, #task-form .x:focus-visible { outline: 2px solid var(--shu); outline-offset: 2px; }
+.chips button, .newmember button, :is(#task-form, #proj-form) .ghost { background: transparent; border: 1px solid var(--ink-soft); color: var(--ink); padding: 3px 10px; font: inherit; font-size: 12px; letter-spacing: .06em; cursor: pointer; }
+.chips button:hover, .newmember button:hover, :is(#task-form, #proj-form) .ghost:hover { background: var(--ink-soft); color: var(--paper); }
+.chips button:focus-visible, .newmember button:focus-visible, :is(#task-form, #proj-form) .ghost:focus-visible, :is(#task-form, #proj-form) .btn:focus-visible, :is(#task-form, #proj-form) .x:focus-visible { outline: 2px solid var(--shu); outline-offset: 2px; }
 .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .newmember { display: flex; gap: 6px; margin-top: 6px; }
 .newmember[hidden] { display: none; }
 .form-err { margin: 0 0 8px; font-size: 13px; font-weight: 600; color: var(--shu); }
 .form-err[hidden] { display: none; }
-#task-form footer { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-top: 6px; }
-#task-form footer .salt-wrap { margin-right: auto; }
-#task-form footer .salt { filter: drop-shadow(0 0 1px #5a4a30) drop-shadow(0 2px 2px #3a2c1a55); }
-#task-form .btn { margin: 0; background: #e8dfc6; color: var(--ink); border: 1px solid var(--ink-soft); padding: 8px 20px; }
-#task-form .btn:hover { background: var(--shu); border-color: var(--shu); color: #fff; box-shadow: none; }
+:is(#task-form, #proj-form) footer { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-top: 6px; }
+:is(#task-form, #proj-form) footer .salt-wrap { margin-right: auto; }
+:is(#task-form, #proj-form) footer .salt { filter: drop-shadow(0 0 1px #5a4a30) drop-shadow(0 2px 2px #3a2c1a55); }
+:is(#task-form, #proj-form) .btn { margin: 0; background: #e8dfc6; color: var(--ink); border: 1px solid var(--ink-soft); padding: 8px 20px; }
+:is(#task-form, #proj-form) .btn:hover { background: var(--shu); border-color: var(--shu); color: #fff; box-shadow: none; }
 /* help page */
 .doc { max-width: 760px; margin: 0 auto; padding: 28px 22px 80px; color: var(--text); line-height: 1.8; overflow-y: auto; height: 100vh; }
 .doc h1 { font-weight: 400; font-size: 28px; letter-spacing: .12em; margin: 8px 0 4px; }
@@ -393,4 +393,93 @@ kbd { display: inline-block; min-width: 22px; text-align: center; padding: 0 6px
   .team td { border: 0; padding: 2px 4px; }
   .team .acts-cell { grid-column: 1 / -1; text-align: left; }
   .team .acts-cell .ghost:first-child { margin-left: 0; }
+}
+
+/* project menu: a sliding panel under the header, like a fusuma opening */
+.proj { position: relative; margin-left: 22px; }
+.proj-btn { display: flex; align-items: center; gap: 8px; max-width: 280px; background: var(--field-bg); border: 1px solid var(--field-border); color: var(--text); font: inherit; font-size: 14px; letter-spacing: .06em; padding: 5px 12px; cursor: pointer; }
+.proj-btn:hover { border-color: var(--flame); }
+.proj-btn:focus-visible { outline: 2px solid var(--flame); outline-offset: 2px; }
+.proj-btn .proj-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.proj-btn .caret { font-size: 11px; color: var(--text-dim); }
+.proj-menu { position: absolute; top: calc(100% + 6px); left: 0; z-index: 60; min-width: 280px; max-width: 360px; max-height: 70vh; overflow-y: auto; padding: 6px 0; background: var(--paper); color: var(--ink); border: 1px solid var(--ofuda-line); box-shadow: 0 18px 40px #000b, var(--card-shadow); background-image: repeating-linear-gradient(90deg, #0000 0 59px, #0000001a 59px 60px); transform-origin: top left; animation: fusuma .22s ease-out; }
+.proj-menu[hidden] { display: none; }
+@keyframes fusuma { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+.proj-menu .mi { display: flex; align-items: baseline; gap: 8px; width: 100%; text-align: left; background: transparent; border: 0; color: var(--ink); font: inherit; font-size: 14px; padding: 8px 14px; cursor: pointer; }
+.proj-menu .mi:hover, .proj-menu .mi:focus-visible { background: #0000000f; outline: none; box-shadow: inset 3px 0 0 var(--shu); }
+.proj-menu .pn { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.proj-menu .pc { font-size: 12px; color: var(--ink-soft); white-space: nowrap; }
+.proj-menu .pc b { color: var(--shu); font-weight: 600; }
+.proj-menu .dot { width: 8px; height: 8px; border-radius: 50%; border: 1px solid var(--ink-soft); flex: none; align-self: center; }
+.proj-menu [aria-checked="true"] .dot { background: var(--shu); border-color: var(--shu); box-shadow: 0 0 6px #ff6a1a99; }
+.proj-menu [aria-checked="true"] .pn { font-weight: 600; }
+.proj-menu hr { border: 0; border-top: 1px solid var(--ofuda-line); margin: 6px 0; }
+@media (prefers-reduced-motion: reduce) { .proj-menu { animation: none; } }
+body.safe .proj-menu { animation: none; }
+/* custom fields on the card */
+.cf { margin: 2px 0 6px; display: flex; flex-wrap: wrap; gap: 2px 12px; font-size: 12px; color: var(--ink-soft); }
+.cf:empty { display: none; }
+.cf > div { display: flex; gap: 4px; }
+.cf dt { font-weight: 600; }
+.cf dt::after { content: ":"; }
+.cf .chk dt::after { content: ""; }
+.cf dd { margin: 0; color: var(--ink); word-break: break-word; }
+.cf a { color: var(--ink); }
+/* reference links: small paper tags */
+.links { display: flex; flex-wrap: wrap; gap: 4px; margin: 2px 0 6px; }
+.links:empty { display: none; }
+.chip { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; padding: 1px 7px 1px 5px; font-size: 11px; color: var(--ink); text-decoration: none; background: #efe6cf; border: 1px solid var(--ink-soft); border-radius: 2px; }
+.chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chip:hover { border-color: var(--shu); color: var(--shu); }
+.chip:focus-visible { outline: 2px solid var(--flame); outline-offset: 1px; }
+.ico { width: 14px; height: 14px; flex: none; }
+.lk-github, .lk-github-issue, .lk-github-pr { color: #24292f; }
+.lk-github-issue .ico { color: #1a7f37; }
+.lk-github-pr .ico { color: #8250df; }
+.chip.lk-github-issue:hover, .chip.lk-github-pr:hover, .chip.lk-github:hover { color: var(--shu); }
+/* links and fields in the form */
+.linklist { list-style: none; margin: 0 0 6px; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.linklist:empty { display: none; }
+.linklist .lk { display: flex; align-items: center; gap: 8px; padding: 4px 8px; background: #efe6cf; border: 1px solid var(--ofuda-line); font-size: 13px; }
+.linklist .svc { font-weight: 600; white-space: nowrap; }
+.linklist .u { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-soft); }
+.linklist .rm { background: transparent; border: 0; color: var(--ink-soft); font-size: 18px; line-height: 1; cursor: pointer; padding: 0 4px; }
+.linklist .rm:hover { color: var(--shu); }
+.linklist .rm:focus-visible { outline: 2px solid var(--shu); }
+.linkadd { display: flex; gap: 6px; }
+.linkadd input { flex: 1; }
+:is(#task-form, #proj-form) input[type=url], :is(#task-form, #proj-form) input[type=number], :is(#task-form, #proj-form) input[type=date] { width: 100%; background: #efe6cf; color: #1a1410; border: 1px solid var(--ink-soft); padding: 7px 9px; font: inherit; font-size: 14px; border-radius: 2px; color-scheme: light; }
+.linkadd input { width: auto !important; }
+.linkadd button { background: transparent; border: 1px solid var(--ink-soft); color: var(--ink); padding: 3px 12px; font: inherit; font-size: 12px; cursor: pointer; }
+.linkadd button:hover { background: var(--ink-soft); color: var(--paper); }
+.custom { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; }
+.custom .check { align-self: end; padding-bottom: 8px; }
+.custom .check label { display: flex; align-items: center; gap: 6px; font-size: 14px; letter-spacing: 0; color: var(--ink); }
+#f-project-wrap[hidden] { display: none; }
+/* project settings: the field editor */
+.fielded { display: flex; flex-direction: column; gap: 8px; margin: 8px 0; }
+.frow { display: grid; grid-template-columns: 1fr 120px auto auto; gap: 6px; align-items: center; padding: 8px; border: 1px dashed var(--ofuda-line); }
+.frow .fo { grid-column: 1 / -1; }
+.frow .fo[hidden] { display: none; }
+.frow .fcl { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--ink); white-space: nowrap; letter-spacing: 0; margin: 0; }
+#proj-form .ghost.frm { font-size: 16px; line-height: 1; padding: 4px 9px; }
+#proj-form .addfield { align-self: flex-start; }
+#proj-form .danger { position: relative; overflow: hidden; color: var(--shu); border-color: var(--shu); margin-right: auto; }
+#proj-form .danger[hidden] { display: none; }
+#proj-form .danger::before { content: ""; position: absolute; inset: 0; background: var(--shu); transform: scaleX(0); transform-origin: left; transition: transform .2s; }
+#proj-form .danger.peeling::before { transform: scaleX(1); transition: transform .9s linear; }
+#proj-form .danger.peeling { color: #fff; }
+#proj-form .danger span { position: relative; }
+#proj-form footer .salt-wrap { margin-right: 0; }
+@media (max-width: 720px) {
+  .proj { margin-left: 8px; min-width: 0; flex: 1; }
+  .proj-btn { max-width: 100%; }
+  .proj-menu { position: fixed; left: 8px; right: 8px; top: 56px; min-width: 0; max-width: none; }
+  .custom { grid-template-columns: 1fr; }
+  .frow { grid-template-columns: 1fr auto; }
+  #top { gap: 6px; padding: 8px 10px; }
+  #top .brand { font-size: 0; letter-spacing: 0; }
+  #top .brand b { font-size: 24px; }
+  #top .nav { margin-left: 0; gap: 0; }
+  #top .nav a { font-size: 12px; padding: 4px 5px; }
 }

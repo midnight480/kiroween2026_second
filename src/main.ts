@@ -2,12 +2,17 @@ import "./style.css";
 import * as audio from "./audio";
 import {
   load, save, loadStats, saveStats, loadMembers, saveMembers, newMember, touchMe, MEMBERS_STORAGE_KEY, loadInfo, setSaveFailHandler,
+  loadProjects, saveProjects, newProject, getCurrentProject, setCurrentProject, ensureProjects, PROJECTS_STORAGE_KEY, type Project, type FieldDef,
   formatLeft, truePct, visualPct, isOverdue, STATUSES, type Task, type Status, type Member, type Stats,
 } from "./store";
 import { playCurse } from "./curse";
 import { startPresence, fire, type PresenceHooks } from "./presence";
 import { t, setLang, applyI18n, detectLang, formatDue, type Lang, type Key } from "./i18n";
-import { initDialog, openNew, openEdit, isOpen, MAX_MS } from "./dialog";
+import { initDialog, openNew, openEdit, isOpen as isTaskDialogOpen, MAX_MS } from "./dialog";
+import { initProjectDialog, openNewProject, openProjectSettings, isProjectDialogOpen } from "./projectDialog";
+import { describe, icon } from "./links";
+
+const isOpen = () => isTaskDialogOpen() || isProjectDialogOpen() || menuOpen();
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 /** Open tasks (to do + in progress) the room can hold. */
@@ -19,6 +24,10 @@ const COL_KEY: Record<Status, Key> = { todo: "colTodo", doing: "colDoing", done:
 let tasks: Task[] = load();
 let stats: Stats = loadStats();
 let members: Member[] = loadMembers();
+let projects: Project[] = loadProjects();
+let currentId = "";
+const cur = () => projects.find((p) => p.id === currentId) ?? projects[0];
+const inCur = (x: Task) => x.projectId === currentId;
 let cursing = false;
 let dragging = false;
 const els = new Map<string, HTMLElement>();
@@ -265,6 +274,8 @@ function addMember(name: string): Member {
 }
 
 initDialog({
+  project: (task) => projects.find((p) => p.id === (task?.projectId ?? currentId)),
+  projects: () => projects,
   members: () => members,
   addMember,
   onOpen: () => { /* hauntings wait while the user writes (see checkExpiry and hooks.cards) */ },
@@ -276,16 +287,18 @@ initDialog({
   onSubmit(input, task) {
     const now = Date.now();
     if (!task) {
-      if (tasks.filter((x) => x.status !== "done").length >= MAX_OPEN) return "errLimit";
+      if (tasks.filter((x) => x.projectId === input.projectId && x.status !== "done").length >= MAX_OPEN) return "errLimit";
       const created: Task = {
-        id: crypto.randomUUID(), title: input.title, note: input.note, assignee: input.assignee,
+        id: crypto.randomUUID(), projectId: input.projectId, fields: input.fields, links: input.links,
+        title: input.title, note: input.note, assignee: input.assignee,
         created: now, due: input.due, status: input.status === "done" ? "todo" : input.status,
         extended: 0, cursed: false, penalty: 0, updated: now,
       };
       tasks.push(created);
       persist();
       audio.rustle(0.4);
-      render();
+      // a task lit for another project takes you there, so you see where it went
+      if (created.projectId !== currentId) switchProject(created.projectId, false); else render();
       requestAnimationFrame(() => els.get(created.id)?.scrollIntoView({ block: "nearest" }));
       return null;
     }
@@ -300,10 +313,15 @@ initDialog({
     task.title = input.title;
     task.note = input.note;
     task.assignee = input.assignee;
+    task.fields = input.fields;
+    task.links = input.links;
+    const moved = task.projectId !== input.projectId;
+    task.projectId = input.projectId;
     task.updated = now;
     if (input.status !== task.status) setStatus(task, input.status);
     persist();
     render();
+    if (moved) announce(t("liveMoved", { col: projects.find((p) => p.id === task.projectId)?.name ?? "", title: task.title }));
     return null;
   },
 });
@@ -314,6 +332,109 @@ function openDialog(task?: Task) {
   if (task) openEdit(task); else openNew();
 }
 $("new").addEventListener("click", () => openDialog());
+
+/* ---------- projects: the menu in the header ---------- */
+const projBtn = $("proj-btn");
+const projMenu = $("proj-menu");
+const menuOpen = () => !projMenu.hidden;
+
+function switchProject(id: string, sound = true) {
+  if (id === currentId || !projects.some((p) => p.id === id)) { render(); return; }
+  hideUndo();
+  currentId = id;
+  setCurrentProject(id);
+  if (sound) audio.rustle(0.5);
+  render();
+  announce(t("liveProject", { name: cur()?.name ?? "" }));
+}
+
+function buildMenu() {
+  const now = Date.now();
+  const item = (cls: string, html: string, attrs = "") => `<button type="button" class="${cls}" ${attrs}>${html}</button>`;
+  projMenu.innerHTML =
+    projects.map((p) => {
+      const open = tasks.filter((x) => x.projectId === p.id && x.status !== "done").length;
+      const late = tasks.filter((x) => x.projectId === p.id && isOverdue(x, now)).length;
+      return item("mi proj-item", `<span class="dot" aria-hidden="true"></span><span class="pn">${esc(p.name)}</span>
+        <span class="pc">${esc(t("projOpenCount", { n: open }))}${late ? ` · <b>${late} 遅</b>` : ""}</span>`,
+        `role="menuitemradio" aria-checked="${p.id === currentId}" data-id="${esc(p.id)}"`);
+    }).join("") +
+    `<hr role="separator" />` +
+    item("mi", esc(t("projNew")), `role="menuitem" data-act="new"`) +
+    item("mi", esc(t("projSettings")), `role="menuitem" data-act="settings"`);
+}
+
+function openMenu() {
+  if (cursing || isTaskDialogOpen() || isProjectDialogOpen()) return;
+  buildMenu();
+  projMenu.hidden = false;
+  projBtn.setAttribute("aria-expanded", "true");
+  (projMenu.querySelector<HTMLElement>('[aria-checked="true"]') ?? projMenu.querySelector<HTMLElement>(".mi"))?.focus();
+  audio.rustle(0.25);
+}
+function closeMenu(focusBtn = true) {
+  if (!menuOpen()) return;
+  projMenu.hidden = true;
+  projBtn.setAttribute("aria-expanded", "false");
+  if (focusBtn) projBtn.focus();
+}
+
+projBtn.addEventListener("click", () => (menuOpen() ? closeMenu() : openMenu()));
+projMenu.addEventListener("click", (e) => {
+  const b = (e.target as HTMLElement).closest<HTMLElement>(".mi");
+  if (!b) return;
+  if (b.dataset.id) { closeMenu(); switchProject(b.dataset.id); }
+  else if (b.dataset.act === "new") { closeMenu(false); lastFocus = projBtn; openNewProject(); }
+  else if (b.dataset.act === "settings") { closeMenu(false); lastFocus = projBtn; openProjectSettings(cur(), projects.length > 1); }
+});
+projMenu.addEventListener("keydown", (e) => {
+  const items = [...projMenu.querySelectorAll<HTMLElement>(".mi")];
+  const i = items.indexOf(document.activeElement as HTMLElement);
+  if (e.key === "ArrowDown") { e.preventDefault(); items[(i + 1) % items.length]?.focus(); }
+  else if (e.key === "ArrowUp") { e.preventDefault(); items[(i - 1 + items.length) % items.length]?.focus(); }
+  else if (e.key === "Home") { e.preventDefault(); items[0]?.focus(); }
+  else if (e.key === "End") { e.preventDefault(); items[items.length - 1]?.focus(); }
+  else if (e.key === "Escape") { e.preventDefault(); closeMenu(); }
+  else if (e.key === "Tab") closeMenu(false);
+});
+document.addEventListener("pointerdown", (e) => {
+  if (menuOpen() && !(e.target as HTMLElement).closest(".proj")) closeMenu(false);
+});
+
+initProjectDialog({
+  onSave(name, fields, project) {
+    if (project) {
+      project.name = name;
+      project.fields = fields;
+      saveProjects(projects);
+      render();
+    } else {
+      const p = newProject(name);
+      p.fields = fields;
+      projects.push(p);
+      saveProjects(projects);
+      switchProject(p.id);
+    }
+    return null;
+  },
+  onDelete(project) {
+    if (projects.length < 2) return "errProjLast";
+    if (tasks.some((x) => x.projectId === project.id && x.status !== "done")) return "errProjNotEmpty";
+    // finished tasks go with the project
+    tasks = tasks.filter((x) => x.projectId !== project.id);
+    projects = projects.filter((p) => p.id !== project.id);
+    saveProjects(projects);
+    persist();
+    switchProject(projects[0].id);
+    announce(t("projDeleted", { name: project.name }));
+    return null;
+  },
+  onClose() {
+    const focus = lastFocus;
+    lastFocus = null;
+    if (focus && document.contains(focus)) focus.focus();
+  },
+});
 
 /* ---------- cards ---------- */
 function esc(s: string) { return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!)); }
@@ -332,6 +453,8 @@ function createCard(task: Task): HTMLElement {
       <div class="times"><span class="left"></span><span class="when"></span></div>
       <div class="song" aria-hidden="true"></div>
       <p class="note"></p>
+      <dl class="cf"></dl>
+      <div class="links"></div>
       <div class="acts">
         <button type="button" class="mv prev" aria-label=""><span aria-hidden="true">←</span></button>
         <button type="button" class="mv next" aria-label=""><span aria-hidden="true">→</span></button>
@@ -520,13 +643,13 @@ function wireDrag(el: HTMLElement, find: () => Task | undefined) {
 function render() {
   if (dragging) return;
   const focused = document.activeElement as HTMLElement | null;
-  const alive = new Set(tasks.map((x) => x.id));
+  const alive = new Set(tasks.filter(inCur).map((x) => x.id));
   for (const [id, el] of els) {
     if (!alive.has(id) && !el.classList.contains("burning")) { el.remove(); els.delete(id); }
   }
   for (const s of STATUSES) {
     const list = lists.get(s)!;
-    const items = tasks.filter((x) => x.status === s).sort(sortKey);
+    const items = tasks.filter((x) => inCur(x) && x.status === s).sort(sortKey);
     items.forEach((task, i) => {
       const el = els.get(task.id) ?? createCard(task);
       // move only what is out of place, so focus and scroll stay put
@@ -537,15 +660,44 @@ function render() {
     $(`n-${s}`).textContent = String(items.length);
   }
   if (focused && document.contains(focused) && document.activeElement !== focused) focused.focus({ preventScroll: true });
+  $("proj-name").textContent = cur()?.name ?? "";
+  if (menuOpen()) buildMenu();
   refresh();
+}
+
+/* ---------- what the card shows of the project's fields and the links ---------- */
+const dateFmt = () => new Intl.DateTimeFormat(document.documentElement.lang === "ja" ? "ja-JP" : "en-US", { year: "numeric", month: "short", day: "numeric" });
+function fieldsHtml(task: Task, defs: FieldDef[]): string {
+  const v = task.fields ?? {};
+  return defs.filter((f) => f.onCard && v[f.id] !== undefined && v[f.id] !== "").map((f) => {
+    const val = v[f.id];
+    if (f.type === "checkbox") return val === true ? `<div class="chk"><dt>✓</dt><dd>${esc(f.name)}</dd></div>` : "";
+    let shown: string;
+    if (f.type === "date" && typeof val === "string") {
+      const d = new Date(`${val}T00:00`);
+      shown = Number.isFinite(d.getTime()) ? esc(dateFmt().format(d)) : esc(val);
+    } else if (f.type === "url" && typeof val === "string") {
+      const info = describe(val);
+      shown = `<a href="${esc(val)}" target="_blank" rel="noopener noreferrer">${esc(info.label)}</a>`;
+    } else shown = esc(String(val));
+    return `<div><dt>${esc(f.name)}</dt><dd>${shown}</dd></div>`;
+  }).join("");
+}
+function linksHtml(task: Task): string {
+  return (task.links ?? []).map((l) => {
+    const info = describe(l.url);
+    const label = t("linkOpen", { service: info.service, label: info.label });
+    return `<a class="chip lk-${info.kind}" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer" title="${esc(label)}" aria-label="${esc(label)}">${icon(info.kind)}<span>${esc(info.label)}</span></a>`;
+  }).join("");
 }
 
 // The counting song stays Japanese in every language.
 const SONG = ["ひとつ", "ふたつ", "みっつ", "よっつ", "いつつ", "むっつ", "ななつ", "やっつ", "ここのつ", "とお"];
 function refresh() {
   const now = Date.now();
-  $("empty").classList.toggle("hide", tasks.length > 0);
-  $("haunted").textContent = String(tasks.filter((x) => x.cursed && isOverdue(x, now)).length);
+  $("empty").classList.toggle("hide", tasks.some(inCur));
+  $("haunted").textContent = String(tasks.filter((x) => inCur(x) && x.cursed && isOverdue(x, now)).length);
+  const defs = cur()?.fields ?? [];
   $("putout").textContent = String(stats.putOut);
   for (const task of tasks) {
     const el = els.get(task.id);
@@ -565,6 +717,13 @@ function refresh() {
     const m = task.assignee ? members.find((x) => x.id === task.assignee) : undefined;
     el.querySelector(".who")!.innerHTML = m ? `<span class="avatar" aria-hidden="true">${esc([...m.name][0] ?? "")}</span>${esc(m.name)}` : "";
     el.querySelector(".note")!.textContent = task.note ?? "";
+    // only touch the DOM when something changed: links must stay clickable between ticks
+    const cf = fieldsHtml(task, defs);
+    const cfEl = el.querySelector<HTMLElement>(".cf")!;
+    if (cfEl.dataset.v !== cf) { cfEl.innerHTML = cf; cfEl.dataset.v = cf; }
+    const lk = linksHtml(task);
+    const lkEl = el.querySelector<HTMLElement>(".links")!;
+    if (lkEl.dataset.v !== lk) { lkEl.innerHTML = lk; lkEl.dataset.v = lk; }
     if (done) {
       el.querySelector(".left")!.textContent = t("doneAt", { when: formatDue(task.doneAt ?? now, now) });
       el.querySelector(".when")!.textContent = task.late ? t("doneLate") : "";
@@ -629,7 +788,7 @@ const hooks: PresenceHooks = {
   onNoticed() {
     // Rule broken ("do not look behind you"): a random candle looks a tenth shorter. The clock does not change.
     const now = Date.now();
-    const live = tasks.filter((x) => x.status !== "done" && x.due > now);
+    const live = tasks.filter((x) => inCur(x) && x.status !== "done" && x.due > now);
     if (!live.length) return;
     const task = live[Math.floor(Math.random() * live.length)];
     shortenCandle(task, 0.1);
@@ -656,6 +815,7 @@ addEventListener("keydown", (e) => {
   if (e.key === "n" || e.key === "N" || e.key === "/") { e.preventDefault(); openDialog(); }
   else if (e.key === "?") { e.preventDefault(); location.href = "help.html"; }
   else if (e.key === "t" || e.key === "T") { e.preventDefault(); location.href = "members.html"; }
+  else if (e.key === "p" || e.key === "P") { e.preventDefault(); openMenu(); }
   else if (e.key === "1" || e.key === "2" || e.key === "3") {
     // jump to the first card of a column
     const first = lists.get(STATUSES[Number(e.key) - 1])!.querySelector<HTMLElement>(".card");
@@ -665,6 +825,9 @@ addEventListener("keydown", (e) => {
 
 /* ---------- boot ---------- */
 setLang(langSel.value as Lang);
+if (ensureProjects(projects, tasks, t("projFirst"))) { saveProjects(projects); save(tasks); }
+currentId = projects.some((p) => p.id === getCurrentProject()) ? getCurrentProject()! : projects[0].id;
+setCurrentProject(currentId);
 render();
 changeLang(langSel.value as Lang);
 if (loadInfo.recovered) notify("errBroken", 9000);
@@ -675,6 +838,12 @@ touchMe(true);
 // the team page, in another tab, renamed or removed someone
 addEventListener("storage", (e) => {
   if (e.key === MEMBERS_STORAGE_KEY) { members = loadMembers(); refresh(); }
+  else if (e.key === PROJECTS_STORAGE_KEY) {
+    projects = loadProjects();
+    if (ensureProjects(projects, tasks, t("projFirst"))) saveProjects(projects);
+    if (!projects.some((p) => p.id === currentId)) currentId = projects[0].id;
+    render();
+  }
 });
 
 if (new URLSearchParams(location.search).has("debug")) {

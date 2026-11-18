@@ -23,6 +23,12 @@
   </div>
   <header id="top">
     <div class="brand"><b>灯</b> Tomoshibi <small data-i18n="subtitle"></small></div>
+    <div class="proj">
+      <button type="button" id="proj-btn" class="proj-btn" aria-haspopup="menu" aria-expanded="false" aria-controls="proj-menu" data-i18n-title="projMenuAria">
+        <span class="proj-name" id="proj-name"></span><span class="caret" aria-hidden="true">▾</span>
+      </button>
+      <div id="proj-menu" class="proj-menu" role="menu" hidden data-i18n-aria="projMenuAria"></div>
+    </div>
     <nav class="nav" data-i18n-aria="navAria">
       <a href="./" aria-current="page" data-i18n="navBoard"></a>
       <a href="members.html" data-i18n="navTeam"></a>
@@ -77,6 +83,9 @@
         <h2 id="dlg-title"></h2>
         <button type="button" class="x" id="dlg-close" data-i18n-aria="dlgClose">×</button>
       </header>
+      <div class="f" id="f-project-wrap"><label for="f-project" data-i18n="fProject"></label>
+        <select id="f-project"></select>
+      </div>
       <label class="f"><span data-i18n="fTitle"></span>
         <input id="f-title" type="text" maxlength="80" data-i18n-ph="fTitlePh" required />
       </label>
@@ -108,8 +117,17 @@
           </select>
         </div>
       </div>
+      <div id="f-custom" class="custom"></div>
+      <div class="f">
+        <label for="f-link" data-i18n="fLinks"></label>
+        <ul id="f-links" class="linklist"></ul>
+        <div class="linkadd">
+          <input id="f-link" type="url" inputmode="url" data-i18n-ph="fLinkPh" />
+          <button type="button" id="f-link-add" data-i18n="fLinkAdd"></button>
+        </div>
+      </div>
       <label class="f"><span data-i18n="fNote"></span>
-        <textarea id="f-note" rows="4" maxlength="500" data-i18n-ph="fNotePh"></textarea>
+        <textarea id="f-note" rows="3" maxlength="500" data-i18n-ph="fNotePh"></textarea>
         <small id="f-note-count" aria-hidden="true"></small>
       </label>
       <p id="f-err" class="form-err" role="alert" hidden></p>
@@ -117,6 +135,30 @@
         <div class="salt-wrap"><div class="salt"></div></div>
         <button type="button" id="dlg-cancel" class="ghost" data-i18n="cancel"></button>
         <button type="submit" id="dlg-ok" class="btn"></button>
+      </footer>
+    </form>
+  </dialog>
+  <dialog id="proj-dialog" aria-labelledby="pd-title">
+    <form id="proj-form" method="dialog" novalidate autocomplete="off">
+      <header>
+        <h2 id="pd-title"></h2>
+        <button type="button" class="x" id="pd-close" data-i18n-aria="dlgClose">×</button>
+      </header>
+      <label class="f"><span data-i18n="projName"></span>
+        <input id="pd-name" type="text" maxlength="40" data-i18n-ph="projNamePh" />
+      </label>
+      <div class="f">
+        <span data-i18n="projFields"></span>
+        <small data-i18n="projFieldsHint"></small>
+        <div id="pd-fields" class="fielded"></div>
+        <button type="button" id="pd-add-field" class="ghost addfield" data-i18n="fieldAdd"></button>
+      </div>
+      <p id="pd-err" class="form-err" role="alert" hidden></p>
+      <footer>
+        <div class="salt-wrap"><div class="salt"></div></div>
+        <button type="button" id="pd-delete" class="ghost hold danger" data-i18n-title="projDeleteTitle"><span data-i18n="projDelete"></span></button>
+        <button type="button" id="pd-cancel" class="ghost" data-i18n="cancel"></button>
+        <button type="submit" id="pd-ok" class="btn"></button>
       </footer>
     </form>
   </dialog>

@@ -1,13 +1,50 @@
 import { t } from "./i18n";
+import { cleanUrl } from "./links";
 
 /** Where the task is in the work. Overdue is not a status: it is derived from `due` (see `isOverdue`). */
 export type Status = "todo" | "doing" | "done";
 export const STATUSES: Status[] = ["todo", "doing", "done"];
 export const MEMBERS_STORAGE_KEY = "tomoshibi.members";
 
+/* ---------- projects ---------- */
+export type FieldType = "text" | "number" | "select" | "date" | "checkbox" | "url";
+export const FIELD_TYPES: FieldType[] = ["text", "number", "select", "date", "checkbox", "url"];
+export type FieldValue = string | number | boolean;
+
+/** A field the project adds to every one of its tasks. */
+export interface FieldDef {
+  id: string;
+  name: string;
+  type: FieldType;
+  /** Choices, for `select`. */
+  options?: string[];
+  /** Show the value on the card, not only in the form. */
+  onCard: boolean;
+}
+
+export interface Project {
+  id: string;
+  name: string;
+  created: number;
+  fields: FieldDef[];
+}
+
+export interface Link {
+  id: string;
+  url: string;
+}
+
+export const MAX_LINKS = 10;
+
 export interface Task {
   id: string;
+  /** The project the task belongs to. */
+  projectId: string;
   title: string;
+  /** Values of the project's own fields, by field id. */
+  fields?: Record<string, FieldValue>;
+  /** Reference links: GitHub, Google Docs / Slides / Sheets, Word / PowerPoint / Excel, anything. */
+  links?: Link[];
   /** Free text, 0..500 characters. */
   note?: string;
   /** Id of a `Member`. Later this becomes an account id. */
@@ -75,8 +112,24 @@ function backUp(raw: string): void {
 
 function normalize(x: Record<string, unknown>, now: number): Task {
   const status: Status = x.status === "doing" || x.status === "done" ? x.status : "todo";
+  const fields: Record<string, FieldValue> = {};
+  if (x.fields && typeof x.fields === "object") {
+    for (const [k, v] of Object.entries(x.fields as Record<string, unknown>)) {
+      if (typeof v === "string" || typeof v === "boolean" || isNum(v)) fields[k] = v;
+    }
+  }
+  const links: Link[] = Array.isArray(x.links)
+    ? (x.links as unknown[]).flatMap((l) => {
+      const o = l as Partial<Link> | null;
+      const url = o && typeof o.url === "string" ? cleanUrl(o.url) : null;
+      return url ? [{ id: typeof o!.id === "string" ? o!.id : crypto.randomUUID(), url }] : [];
+    }).slice(0, MAX_LINKS)
+    : [];
   return {
     id: String(x.id),
+    projectId: typeof x.projectId === "string" ? x.projectId : "",
+    fields: Object.keys(fields).length ? fields : undefined,
+    links: links.length ? links : undefined,
     title: String(x.title),
     note: typeof x.note === "string" && x.note ? x.note : undefined,
     assignee: typeof x.assignee === "string" && x.assignee ? x.assignee : undefined,
@@ -191,6 +244,60 @@ export function touchMe(force = false): void {
 
 export function saveMembers(m: Member[]): void {
   try { localStorage.setItem(MEMBERS_KEY, JSON.stringify(m)); } catch { onSaveFail?.(); }
+}
+
+const PROJECTS_KEY = "tomoshibi.projects";
+const CURRENT_KEY = "tomoshibi.project";
+export const PROJECTS_STORAGE_KEY = PROJECTS_KEY;
+
+function normalizeField(f: Record<string, unknown>): FieldDef | null {
+  if (typeof f.id !== "string" || typeof f.name !== "string" || !FIELD_TYPES.includes(f.type as FieldType)) return null;
+  const options = Array.isArray(f.options) ? f.options.filter((o): o is string => typeof o === "string" && !!o.trim()) : undefined;
+  return { id: f.id, name: f.name, type: f.type as FieldType, options: f.type === "select" ? options ?? [] : undefined, onCard: !!f.onCard };
+}
+
+export function loadProjects(): Project[] {
+  try {
+    const v = JSON.parse(localStorage.getItem(PROJECTS_KEY) ?? "[]");
+    if (!Array.isArray(v)) return [];
+    return v.filter((p) => p && typeof p.id === "string" && typeof p.name === "string").map((p) => ({
+      id: p.id,
+      name: p.name,
+      created: isNum(p.created) ? p.created : Date.now(),
+      fields: Array.isArray(p.fields) ? p.fields.map(normalizeField).filter((f: FieldDef | null): f is FieldDef => !!f) : [],
+    }));
+  } catch {
+    return [];
+  }
+}
+
+export function saveProjects(p: Project[]): void {
+  try { localStorage.setItem(PROJECTS_KEY, JSON.stringify(p)); } catch { onSaveFail?.(); }
+}
+
+export function newProject(name: string): Project {
+  return { id: crypto.randomUUID(), name, created: Date.now(), fields: [] };
+}
+
+export function getCurrentProject(): string | null {
+  try { return localStorage.getItem(CURRENT_KEY); } catch { return null; }
+}
+export function setCurrentProject(id: string): void {
+  try { localStorage.setItem(CURRENT_KEY, id); } catch { onSaveFail?.(); }
+}
+
+/**
+ * There is always at least one project. Tasks saved before projects existed (or whose project
+ * is gone) are put in the first one. Returns true when something had to be written.
+ */
+export function ensureProjects(projects: Project[], tasks: Task[], firstName: string): boolean {
+  let changed = false;
+  if (!projects.length) { projects.push(newProject(firstName)); changed = true; }
+  const ids = new Set(projects.map((p) => p.id));
+  for (const task of tasks) {
+    if (!ids.has(task.projectId)) { task.projectId = projects[0].id; changed = true; }
+  }
+  return changed;
 }
 
 /** Overdue = still open and past the real deadline. */

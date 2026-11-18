@@ -10,6 +10,9 @@ interface Task {
   assignee?: string;     // Member の id。アカウントができたらアカウントの id に置き換える
   created: number;       // ms。蝋燭の全長の起点
   due: number;           // ms。ユーザーが決めた期限。演出では変えない
+  projectId: string;     // Project の id (projects.md)
+  fields?: Record<string, string | number | boolean>;
+  links?: { id: string; url: string }[];
   status: "todo" | "doing" | "done";
   doneAt?: number;
   late?: boolean;        // 期限後に完了した
@@ -32,9 +35,12 @@ interface Task {
 - `src/main.ts`: 看板の描画 (`render()` は並び順だけを直し、`refresh()` は毎秒、文字と蝋燭を直す)、カードの操作、列の間のドラッグ (`wireDrag()`)、期限判定、気配の hooks、ショートカット。
 - `src/dialog.ts`: 登録・編集モーダル。入力の検証 (件名、期限の範囲) と、担当者の追加。結果は `onSubmit` で `main.ts` に渡す。
 - `members.html` + `src/members.ts`: 名簿。仕様は `team.md`。
+- `src/projectDialog.ts`: プロジェクトの作成と設定 (項目の編集、削除)。メニューは `main.ts` の `buildMenu()` / `openMenu()`。仕様は `projects.md`。
+- `src/links.ts`: URL の検査 (`cleanUrl`、http(s) だけ)、サービスの見分け (`describe`)、アイコン (`icon`)。
 - `help.html` + `src/help.ts`: ヘルプページ。ルーターは使わず、`vite.config.ts` で3ページをビルドする。
 - `src/page.ts`: 名簿とヘルプで共通の、テーマと言語の初期化。3ページとも同じ `tomoshibi.settings` を読む。ページの間はヘッダーのナビ (看板 / 名簿 / ヘルプ) で移る。文言は HTML の `.en` / `.ja` で持ち、`<html lang>` で出し分ける。
-- 登録モーダルが開いている間、ドラッグ中、呪いの演出中は、期限判定と気配の演出を止める。
+- 登録モーダル、プロジェクトの設定、プロジェクトのメニューが開いている間、ドラッグ中、呪いの演出中は、期限判定と気配の演出を止める。
+- 看板は `currentId` のプロジェクトのタスクだけを描く。期限判定は全プロジェクトのタスクに対して行う (ほかのプロジェクトの灯も消える)。
 
 ## 多言語とテーマ
 - `src/i18n.ts`: 英語と日本語の辞書。`t(key, vars)`、`applyI18n()`、`formatDue()`。HTML は `data-i18n` (本文)、`data-i18n-html`、`data-i18n-ph` (placeholder)、`data-i18n-title`、`data-i18n-aria` で差し込む。動的な文言は `refresh()` で `t()` を呼ぶ。
