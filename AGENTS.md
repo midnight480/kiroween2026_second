@@ -38,7 +38,14 @@ Kiroween 2026 (https://kiroween.devpost.com/) の **Costume Contest** 部門向�
 npm install
 npm run dev      # http://localhost:5173/?debug でデバッグAPI有効
 npm run build    # tsc --noEmit && vite build。変更後は必ず通すこと
+npm run cf:dev       # ビルドして wrangler dev (本番と同じ静的アセット配信を手元で確認)
+npm run deploy:dry   # ビルドしてデプロイの検査だけ行う
+npm run deploy       # ビルドして Cloudflare Workers へデプロイ
+npm run cf:tail      # 本番のログを流す
+npm run cf:whoami    # wrangler のログイン状態を確認 (未ログインなら npx wrangler login)
 ```
+
+Cloudflare の設定は `wrangler.jsonc` (Worker 名 `tomoshibi`、`dist/` を配信、カスタムドメイン)。
 
 デバッグ (`?debug` 付きURL、コンソール):
 - `__t.curse()` 期限切れの呪い演出を再生
@@ -63,6 +70,7 @@ src/audio.ts      Web Audio による効果音・環境音
 src/store.ts      Task型 (v2)、担当者、localStorage (v1 からの移行、壊れたデータの退避)、統計、残り時間の整形、蝋燭の見た目の割合
 src/i18n.ts       英語・日本語の辞書、期限の日時の整形 (和ホラーの語は入れない)
 src/style.css     全スタイル (ライトとダークは変数で切り替え)
+wrangler.jsonc    Cloudflare Workers の設定 (静的アセット、カスタムドメイン)
 docs/             設計資料 (下記)
 ```
 
@@ -80,6 +88,8 @@ docs/             設計資料 (下記)
 - `docs/architecture.md` 構成、データ、シーケンス、拡張方法
 - `docs/audio.md` 音の役割、Web Audio のノードの組み合わせ方、モバイルでの注意
 - `docs/mobile.md` PWA、画面幅の区分、ハンバーガーメニュー、タッチ操作
+- `docs/deploy.md` Cloudflare Workers、Hyperdrive、Neon へのデプロイ手順
+- `docs/deploy.md` Cloudflare Workers、Hyperdrive、Neon へのデプロイ手順
 - `docs/roadmap.md` 未実装項目と未確認事項
 
 ## 作業ルール

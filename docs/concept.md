@@ -12,7 +12,14 @@ Kiroween 2026 の **Costume Contest** に提出する、不気味で洗練され
 - 仕上がりが polished (洗練) であること
 - 不気味な要素がアプリの機能を助けていること。「怖い見た目を貼り付けただけ」は評価されにくい
 
-注記: Devpostのページは取得時に403で、要項の全文は未確認です。締切と提出要件は別途確認が必要です。
+## 大会要件 (Web検索のスニペットで確認。Devpost本体は403で全文未確認)
+
+- 提出期間: 2026-10-30 〜 2026-12-04 (締切は太平洋時間14:00、日本時間では12-05 07:00)。期間中に作ること。10-30より前に始めたプロジェクトは対象外。
+- **Kiroを使うことが必須。** vibe coding、hooks、steering、MCP、specs、Kiro Crew、powers のいずれか。
+- 審査 (2025年版。2026年版は未確認): 潜在的な価値、Kiroの活用、創造性。
+- 2025年版の提出物 (2026年版は未確認): デモ動画、公開リポジトリ、OSSライセンス、`.kiro` ディレクトリをリポジトリに含めること。
+
+出典: https://kiroween.devpost.com/ (検索スニペット)、https://kiroween-2025.devpost.com/、https://dev.to/brian_mk/decoding-kiroween-4nm
 
 ## アプリ
 
@@ -46,4 +53,4 @@ Kiroween 2026 の **Costume Contest** に提出する、不気味で洗練され
 
 - UIは英語と日本語に対応し、ライトとダークの両方を用意する (決定)。和ホラーの語は、どちらの言語でも日本語のまま出す。
 - 技術はVite + TypeScript。デプロイ先は Cloudflare (決定)。認証 (Clerk) と DB (Neon) を足すかは検討中 (`roadmap.md`)。
-- Kiroのspec、steering、hooksを開発に使い、提出物に含めるかは未決定。
+- Kiroの使用は必須要件。spec、steering、hooks を開発に使い、`.kiro/` をリポジトリに含める (未着手)。

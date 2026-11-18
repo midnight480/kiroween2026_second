@@ -41,8 +41,13 @@
 - 明朝体を同梱するか。Windows と Android では `Georgia` に落ちる (`visual-design.md`)。
 - 審査員への説明を、アプリ内にも出すか (ホバー注釈、ゲート画面の一文)。
 
-- 提出の締切と必須要件 (Devpostが403で未取得)。
-- Kiroのspec、steering、hooksを開発に使い、提出物に含めるか。
+- 2026年版の審査基準と提出物の正確な要件 (Devpost本体が403で未取得。ブラウザで要確認)。
+
+## 最優先 (提出要件)
+
+- `.kiro/` を作る: steering (本プロジェクトの方針は `AGENTS.md` から転記)、spec (主要機能)、hooks (例: 保存時にbuild)。
+- デモ動画、公開リポジトリ、OSSライセンス (LICENSE は存在)。
+- 締切: 2026-12-04 14:00 PT (日本時間 12-05 07:00)。
 
 ## 次の候補 (優先度順)
 0. API: 認証 (Clerk) の後に実装する。下の「API (予定)」。サインインと同時に、役割の権限と、全員分の最後に見た時を実装する (`team.md`)。
@@ -59,11 +64,16 @@
 
 ## デプロイ (決定: Cloudflare)
 
+手順は `deploy.md` にまとめた。
+
+手順は `deploy.md` にまとめた。
+
 ドメインを Cloudflare で管理しているため、デプロイ先は Cloudflare にします。
 
 - 配信は Cloudflare Workers の静的アセット。`npm run build` の `dist/` を配る。
 - 認証を入れる場合は、同じ Worker に API を置く。DB は Neon で、接続は Hyperdrive + node-postgres (Neon の推奨)。
 - 公開ドメインは `tomoshibi.midnight480.com` (Worker のカスタムドメインとして設定する)。
+- CLI は `wrangler` (devDependencies に導入済み)。設定は `wrangler.jsonc`、手順は AGENTS.md のコマンド欄。
 
 ## 検討中: 認証 (Clerk + Neon)
 
@@ -97,7 +107,7 @@
 
 ### 追加になるもの
 
-- 依存パッケージ: `@clerk/clerk-js`、`@clerk/backend`、`pg`、`wrangler`。AGENTS.md の作業ルールにより、追加前にユーザーの確認が必要。
+- 依存パッケージ: `@clerk/clerk-js`、`@clerk/backend`、`pg` (`wrangler` は導入済み)。AGENTS.md の作業ルールにより、追加前にユーザーの確認が必要。
 - `Task` の保存先の切り替え (ゲストは `localStorage`、サインイン時は API)、初回サインイン時の `localStorage` からの移行。
 - 秘密情報 (Clerk の Secret Key、DB 接続文字列) は `wrangler secret` と Hyperdrive の設定に置き、リポジトリに入れない。
 
