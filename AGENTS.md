@@ -48,10 +48,13 @@ npm run build    # tsc --noEmit && vite build。変更後は必ず通すこと
 
 ```
 index.html        ゲート、ヘッダー、看板(3列)、フッター、登録モーダル、#curse
+members.html      名簿 (チームメンバー、役割、最後に見た時)
 help.html         ヘルプページ (ショートカット一覧、使い方)
 src/main.ts       看板の描画、カード、列の間のドラッグ、御札の封、燃やす、蝋の継ぎ足し、元に戻す、期限判定、テーマ、言語、ショートカット
 src/dialog.ts     登録・編集モーダル (件名、期限、担当者、状態、メモ、盛り塩のエラー)
-src/help.ts       ヘルプページのテーマと言語
+src/members.ts    名簿の画面
+src/page.ts       名簿とヘルプで共通のテーマ・言語の初期化
+src/help.ts       ヘルプページ
 src/curse.ts      期限切れの呪いシーケンス (暗転→血→女→飛びかかり)
 src/presence.ts   気配の演出 (人影、目、囁き、ずれ、改変)
 src/audio.ts      Web Audio による効果音・環境音
@@ -65,6 +68,7 @@ docs/             設計資料 (下記)
 
 - `docs/concept.md` 目的、審査基準、ユーザーの意向
 - `docs/features.md` 基本機能、優先度、要判断の点
+- `docs/team.md` 名簿、役割、最後に見た時
 - `docs/task-management.md` タスク管理の機能仕様 (状態、データ、操作、受け入れ基準)
 - `docs/visual-design.md` 色、文字、質感、動き、仕上げの確認項目
 - `docs/japanese-horror.md` 和ホラー要素の意味と、審査員への英語の伝え方

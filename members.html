@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="dark light" />
+  <title>Team — Tomoshibi 灯</title>
+</head>
+<body>
+  <main class="doc wide">
+    <header class="pagebar">
+      <div class="brand"><b>灯</b> Tomoshibi</div>
+      <nav class="nav" data-i18n-aria="navAria">
+        <a href="./" data-i18n="navBoard"></a>
+        <a href="members.html" aria-current="page" data-i18n="navTeam"></a>
+        <a href="help.html" data-i18n="navHelp"></a>
+      </nav>
+      <div class="pickers">
+        <label><span data-i18n="theme"></span>
+          <select id="theme">
+            <option value="system" data-i18n="themeSystem"></option><option value="light" data-i18n="themeLight"></option><option value="dark" data-i18n="themeDark"></option>
+          </select>
+        </label>
+        <label><span data-i18n="lang"></span>
+          <select id="lang"><option value="en">English</option><option value="ja">日本語</option></select>
+        </label>
+      </div>
+    </header>
+
+    <h1><b>名</b><span data-i18n="teamTitle"></span> <small id="team-count"></small></h1>
+    <p class="lead" data-i18n="teamLead"></p>
+
+    <form id="member-form" class="addrow" autocomplete="off" novalidate>
+      <label class="sr-only" for="m-name" data-i18n="thName"></label>
+      <input id="m-name" type="text" maxlength="30" data-i18n-ph="fMemberPh" />
+      <label class="sr-only" for="m-role" data-i18n="thRole"></label>
+      <select id="m-role"></select>
+      <div class="salt-wrap"><div class="salt"></div></div>
+      <button type="submit" class="btn" data-i18n="addMember"></button>
+    </form>
+    <p id="m-err" class="form-err" role="alert" hidden></p>
+
+    <table class="team">
+      <thead>
+        <tr><th data-i18n="thName"></th><th data-i18n="thRole"></th><th data-i18n="thLoad"></th><th data-i18n="thSeen"></th><th><span class="sr-only">—</span></th></tr>
+      </thead>
+      <tbody id="team-body"></tbody>
+    </table>
+    <p id="team-empty" class="empty-note" data-i18n="teamEmpty" hidden></p>
+    <p class="fine" data-i18n="seenNote"></p>
+
+    <h2 data-i18n="rolesTitle"></h2>
+    <dl class="roles" id="roles"></dl>
+    <p class="fine" data-i18n="rolesNote"></p>
+  </main>
+  <div id="live" class="sr-only" role="status" aria-live="polite"></div>
+  <script type="module" src="/src/members.ts"></script>
+</body>
+</html>

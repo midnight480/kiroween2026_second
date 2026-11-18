@@ -96,6 +96,49 @@ const en = {
   undoBtn: "Put it back",
   liveOut: "A candle has gone out: {title}",
   liveMoved: "Moved to {col}: {title}",
+  // navigation
+  navBoard: "Board",
+  navTeam: "Team",
+  navHelp: "Help",
+  navAria: "Pages",
+  // team page
+  teamTitle: "The household",
+  teamLead: "Everyone who can be given a candle.",
+  teamCount: "{n} people",
+  thName: "Name",
+  thRole: "Role",
+  thLoad: "Candles",
+  thSeen: "Last seen",
+  thActions: "",
+  roleOwner: "Owner",
+  roleAdmin: "Admin",
+  roleMember: "Member",
+  roleViewer: "Viewer",
+  roleOwnerDesc: "Everything, including the team and its roles.",
+  roleAdminDesc: "All candles, and adding or removing members.",
+  roleMemberDesc: "Lighting, editing and putting out candles.",
+  roleViewerDesc: "Looking only.",
+  rolesTitle: "Roles",
+  rolesNote: "Roles are recorded now. They will limit what each person can do once sign-in is added.",
+  addMember: "Add to the household",
+  addMemberBtn: "Add",
+  isMe: "This is me",
+  isMeTitle: "Mark this member as the person using this device",
+  you: "you",
+  removeMember: "Remove",
+  removeMemberTitle: "Hold to remove. Their candles stay, with nobody assigned.",
+  loadOpen: "{n} burning",
+  loadOverdue: "{n} 遅",
+  loadNone: "—",
+  seenNever: "never",
+  seenNow: "just now",
+  notSeen: "Not seen for {n} days",
+  seenNote: "Last seen is recorded on this device, for the member marked as you. Once sign-in is added, it will come from each person's account.",
+  teamEmpty: "Nobody lives here yet.",
+  renameAria: "Name of {name}",
+  roleAria: "Role of {name}",
+  memberRemoved: "{name} was removed.",
+  errMemberDup: "The salt crumbled. Someone with that name is already here.",
 };
 
 const ja: Record<keyof typeof en, string> = {
@@ -188,6 +231,47 @@ const ja: Record<keyof typeof en, string> = {
   undoBtn: "灯を戻す",
   liveOut: "灯が消えた: {title}",
   liveMoved: "{col}へ移した: {title}",
+  navBoard: "看板",
+  navTeam: "名簿",
+  navHelp: "ヘルプ",
+  navAria: "ページ",
+  teamTitle: "この家の者",
+  teamLead: "灯を任せられる人の一覧。",
+  teamCount: "{n} 人",
+  thName: "名前",
+  thRole: "役割",
+  thLoad: "担当の灯",
+  thSeen: "最後に見た時",
+  thActions: "",
+  roleOwner: "オーナー",
+  roleAdmin: "管理者",
+  roleMember: "メンバー",
+  roleViewer: "閲覧者",
+  roleOwnerDesc: "全て。名簿と役割の変更も。",
+  roleAdminDesc: "全ての灯と、メンバーの追加・削除。",
+  roleMemberDesc: "灯をともす、書き直す、消す。",
+  roleViewerDesc: "見るだけ。",
+  rolesTitle: "役割",
+  rolesNote: "役割はいまは記録だけです。サインインを入れたら、できることを役割で制限します。",
+  addMember: "名簿に加える",
+  addMemberBtn: "加える",
+  isMe: "これが自分",
+  isMeTitle: "この端末を使っている人として印を付ける",
+  you: "自分",
+  removeMember: "外す",
+  removeMemberTitle: "長押しで名簿から外す。担当の灯は残り、担当者なしになる。",
+  loadOpen: "{n} 灯",
+  loadOverdue: "{n} 遅",
+  loadNone: "—",
+  seenNever: "まだ",
+  seenNow: "いま",
+  notSeen: "{n}日、姿を見ていない",
+  seenNote: "「最後に見た時」は、この端末で「自分」の印を付けた人だけを記録します。サインインを入れたら、各自のアカウントから記録します。",
+  teamEmpty: "まだ誰も住んでいない。",
+  renameAria: "{name} の名前",
+  roleAria: "{name} の役割",
+  memberRemoved: "{name} を名簿から外した。",
+  errMemberDup: "塩が崩れた。同じ名の者がもういる。",
 };
 
 export type Key = keyof typeof en;
@@ -223,6 +307,18 @@ export function formatDue(due: number, now = Date.now()): string {
   if (days === 0) return time;
   if (days > 0 && days < 7) return `${fmt("wd", { weekday: "short" }).format(d)} ${time}`;
   return `${fmt("md", { month: "short", day: "numeric" }).format(d)} ${time}`;
+}
+
+/** "5 min ago" / "5分前". */
+export function formatAgo(ms: number, now = Date.now()): string {
+  const s = Math.round((ms - now) / 1000);
+  const rtf = new Intl.RelativeTimeFormat(lang === "ja" ? "ja-JP" : "en-US", { numeric: "auto" });
+  const a = Math.abs(s);
+  if (a < 45) return t("seenNow");
+  if (a < 3600) return rtf.format(Math.round(s / 60), "minute");
+  if (a < 86400) return rtf.format(Math.round(s / 3600), "hour");
+  if (a < 30 * 86400) return rtf.format(Math.round(s / 86400), "day");
+  return fmt("ymd", { year: "numeric", month: "short", day: "numeric" }).format(new Date(ms));
 }
 
 /** Fill every [data-i18n*] element under root. Strings are our own, so innerHTML is safe here. */

@@ -20,7 +20,7 @@ interface Task {
 }
 ```
 - 保存先は `localStorage` の `tomoshibi.tasks.v2`。初回に v1 (`tomoshibi.tasks.v1`) があれば、全て `todo` として移す。v1 のキーは消さない。
-- 担当者の一覧は `tomoshibi.members` (`{ id, name }[]`)。設定は `tomoshibi.settings` (`safe`, `mute`, `lang`: en / ja, `theme`: system / light / dark)。ヘルプページも同じ設定を読む。
+- 担当者の一覧は `tomoshibi.members` (`{ id, name, role, created, lastSeen? }[]`)、この端末の「自分」は `tomoshibi.me` (`team.md`)。設定は `tomoshibi.settings` (`safe`, `mute`, `lang`: en / ja, `theme`: system / light / dark)。ヘルプページも同じ設定を読む。
 - 期限切れは `isOverdue()`: `status !== "done"` かつ `due <= now`。`cursed` は呪いを再生済みかだけを表す。
 - 蝋燭の見た目の残り割合は `visualPct = (due - now - penalty) / (due - created)`。時計の残り割合は `truePct = (due - now) / (due - created)`。罰と伝染は `penalty` だけを増やす。
 - 統計 `tomoshibi.stats`: `putOut` (完了とお祓いの数)、`late` (そのうち期限後の数)、`burned` (燃やした数)。
@@ -31,7 +31,9 @@ interface Task {
 - `index.html`: ゲート、ヘッダー (ブランドと「New candle」)、看板 (`#board` の3つの `.col`)、フッター、登録モーダル (`<dialog id="task-dialog">`)、`#curse`。
 - `src/main.ts`: 看板の描画 (`render()` は並び順だけを直し、`refresh()` は毎秒、文字と蝋燭を直す)、カードの操作、列の間のドラッグ (`wireDrag()`)、期限判定、気配の hooks、ショートカット。
 - `src/dialog.ts`: 登録・編集モーダル。入力の検証 (件名、期限の範囲) と、担当者の追加。結果は `onSubmit` で `main.ts` に渡す。
-- `help.html` + `src/help.ts`: ヘルプページ。ルーターは使わず、`vite.config.ts` で2ページをビルドする。文言は HTML の `.en` / `.ja` で持ち、`<html lang>` で出し分ける。
+- `members.html` + `src/members.ts`: 名簿。仕様は `team.md`。
+- `help.html` + `src/help.ts`: ヘルプページ。ルーターは使わず、`vite.config.ts` で3ページをビルドする。
+- `src/page.ts`: 名簿とヘルプで共通の、テーマと言語の初期化。3ページとも同じ `tomoshibi.settings` を読む。ページの間はヘッダーのナビ (看板 / 名簿 / ヘルプ) で移る。文言は HTML の `.en` / `.ja` で持ち、`<html lang>` で出し分ける。
 - 登録モーダルが開いている間、ドラッグ中、呪いの演出中は、期限判定と気配の演出を止める。
 
 ## 多言語とテーマ

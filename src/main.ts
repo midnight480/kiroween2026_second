@@ -1,7 +1,7 @@
 import "./style.css";
 import * as audio from "./audio";
 import {
-  load, save, loadStats, saveStats, loadMembers, saveMembers, loadInfo, setSaveFailHandler,
+  load, save, loadStats, saveStats, loadMembers, saveMembers, newMember, touchMe, MEMBERS_STORAGE_KEY, loadInfo, setSaveFailHandler,
   formatLeft, truePct, visualPct, isOverdue, STATUSES, type Task, type Status, type Member, type Stats,
 } from "./store";
 import { playCurse } from "./curse";
@@ -157,6 +157,7 @@ function persist() {
   }
   save(tasks);
   saveStats(stats);
+  touchMe();
 }
 
 /* ---------- undo: five seconds to take the last put-out or burn back ---------- */
@@ -256,7 +257,8 @@ function extend(task: Task, min: number) {
 function addMember(name: string): Member {
   const found = members.find((m) => m.name === name);
   if (found) return found;
-  const m = { id: crypto.randomUUID(), name };
+  const m = newMember(name);
+  members = loadMembers(); // the team page may have changed the list
   members.push(m);
   saveMembers(members);
   return m;
@@ -653,6 +655,7 @@ addEventListener("keydown", (e) => {
   if (mod) return;
   if (e.key === "n" || e.key === "N" || e.key === "/") { e.preventDefault(); openDialog(); }
   else if (e.key === "?") { e.preventDefault(); location.href = "help.html"; }
+  else if (e.key === "t" || e.key === "T") { e.preventDefault(); location.href = "members.html"; }
   else if (e.key === "1" || e.key === "2" || e.key === "3") {
     // jump to the first card of a column
     const first = lists.get(STATUSES[Number(e.key) - 1])!.querySelector<HTMLElement>(".card");
@@ -667,7 +670,12 @@ changeLang(langSel.value as Lang);
 if (loadInfo.recovered) notify("errBroken", 9000);
 setInterval(() => { refresh(); void checkExpiry(); }, 1000);
 // a tab coming back from sleep checks the deadlines at once
-document.addEventListener("visibilitychange", () => { if (!document.hidden) { refresh(); void checkExpiry(); } });
+document.addEventListener("visibilitychange", () => { if (!document.hidden) { touchMe(); refresh(); void checkExpiry(); } });
+touchMe(true);
+// the team page, in another tab, renamed or removed someone
+addEventListener("storage", (e) => {
+  if (e.key === MEMBERS_STORAGE_KEY) { members = loadMembers(); refresh(); }
+});
 
 if (new URLSearchParams(location.search).has("debug")) {
   (window as unknown as Record<string, unknown>).__t = {

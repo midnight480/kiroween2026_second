@@ -8,19 +8,24 @@
 </head>
 <body>
   <main class="doc">
-    <div class="top">
-      <a href="./"><span class="en">← Back to the ledger</span><span class="ja">← 帳面に戻る</span></a>
+    <header class="pagebar">
+      <div class="brand"><b>灯</b> Tomoshibi</div>
+      <nav class="nav" data-i18n-aria="navAria">
+        <a href="./" data-i18n="navBoard"></a>
+        <a href="members.html" data-i18n="navTeam"></a>
+        <a href="help.html" aria-current="page" data-i18n="navHelp"></a>
+      </nav>
       <div class="pickers">
-        <label><span class="en">Theme</span><span class="ja">表示</span>
+        <label><span data-i18n="theme"></span>
           <select id="theme">
-            <option value="system">Auto / 自動</option><option value="light">Light / ライト</option><option value="dark">Dark / ダーク</option>
+            <option value="system" data-i18n="themeSystem"></option><option value="light" data-i18n="themeLight"></option><option value="dark" data-i18n="themeDark"></option>
           </select>
         </label>
-        <label><span class="en">Language</span><span class="ja">言語</span>
+        <label><span data-i18n="lang"></span>
           <select id="lang"><option value="en">English</option><option value="ja">日本語</option></select>
         </label>
       </div>
-    </div>
+    </header>
 
     <h1><b>灯</b><span class="en">How to use the ledger</span><span class="ja">帳面の使い方</span></h1>
     <p class="en">Every task is a candle. Its length is the time left before the deadline. Finish it before it burns out.</p>
@@ -51,6 +56,12 @@
         <tr class="ja"><td><kbd>Space</kbd> / <kbd>Enter</kbd> を長押し</td><td>封、燃やす</td><td>封を剥がす (完了) / 札を燃やす (削除)</td></tr>
         <tr class="en"><td><kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>Z</kbd></td><td>Anywhere, within 5 seconds</td><td>Put the last finished or burned card back</td></tr>
         <tr class="ja"><td><kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>Z</kbd></td><td>どこでも (5秒以内)</td><td>直前に完了・燃やしたカードを戻す</td></tr>
+        <tr class="en"><td><kbd>T</kbd></td><td>Board, help</td><td>Open the team page</td></tr>
+        <tr class="ja"><td><kbd>T</kbd></td><td>看板、ヘルプ</td><td>名簿を開く</td></tr>
+        <tr class="en"><td><kbd>B</kbd> or <kbd>Esc</kbd></td><td>Team, help</td><td>Back to the board</td></tr>
+        <tr class="ja"><td><kbd>B</kbd> か <kbd>Esc</kbd></td><td>名簿、ヘルプ</td><td>看板に戻る</td></tr>
+        <tr class="en"><td><kbd>N</kbd></td><td>Team</td><td>Add a member (focus the name field)</td></tr>
+        <tr class="ja"><td><kbd>N</kbd></td><td>名簿</td><td>メンバーを加える (名前の欄へ)</td></tr>
         <tr class="en"><td><kbd>?</kbd></td><td>Anywhere</td><td>Open this page</td></tr>
         <tr class="ja"><td><kbd>?</kbd></td><td>どこでも</td><td>このページを開く</td></tr>
       </tbody>
@@ -73,13 +84,13 @@
       <li>Press <b>New candle</b> (or <kbd>N</kbd>). Nothing is added until you press <b>Light the candle</b>.</li>
       <li>Title and deadline are required. Assignee, status and notes are optional.</li>
       <li>The deadline must be at least a minute away and within a year. Pick a time, or use a quick length (30 min, 2 hours, …).</li>
-      <li>Assignees are chosen from a list. Add a new name with <b>+ New member…</b>. Names are kept on this device.</li>
+      <li>Assignees are chosen from the team. Add a new name with <b>+ New member…</b>, or on the <b>Team</b> page.</li>
     </ul>
     <ul class="ja">
       <li><b>新しい灯</b> (か <kbd>N</kbd>) を押します。<b>灯をともす</b>を押すまで、何も追加されません。</li>
       <li>件名と期限は必須です。担当者、状態、メモは任意です。</li>
       <li>期限は1分以上先、1年以内です。日時を選ぶか、長さ (30分、2時間 …) のボタンを使います。</li>
-      <li>担当者は一覧から選びます。新しい名前は <b>+ 担当者を追加…</b> で足します。名前はこの端末に保存されます。</li>
+      <li>担当者は名簿から選びます。新しい名前は <b>+ 担当者を追加…</b> か、<b>名簿</b>のページで足します。</li>
     </ul>
 
     <h2><span class="en">On each card</span><span class="ja">カードでできること</span></h2>
@@ -97,6 +108,22 @@
     </table>
     <p class="en">For five seconds after finishing or burning, <b>Put it back</b> appears at the bottom of the screen.</p>
     <p class="ja">完了や削除のあと5秒間、画面の下に<b>灯を戻す</b>が出ます。</p>
+
+    <h2><span class="en">The team</span><span class="ja">名簿</span></h2>
+    <ul class="en">
+      <li>The <b>Team</b> page lists everyone who can be assigned a candle: name, role, how many candles they carry, and when they were last seen.</li>
+      <li>Press <b>This is me</b> on your own row. From then on, this device records when you were last seen.</li>
+      <li>Last seen is only known for the person marked as you on each device, until sign-in is added.</li>
+      <li>Roles (Owner, Admin, Member, Viewer) are recorded now. They will limit what each person can do once sign-in is added.</li>
+      <li>Removing someone keeps their candles. They are left with nobody assigned.</li>
+    </ul>
+    <ul class="ja">
+      <li><b>名簿</b>には、灯を任せられる人が並びます。名前、役割、担当している灯の数、最後に見た時です。</li>
+      <li>自分の行で<b>これが自分</b>を押します。以後、この端末で最後に見た時を記録します。</li>
+      <li>サインインを入れるまでは、各端末で「自分」の印を付けた人の時刻だけが分かります。</li>
+      <li>役割 (オーナー、管理者、メンバー、閲覧者) はいまは記録だけです。サインインを入れたら、できることを役割で制限します。</li>
+      <li>名簿から外しても、その人の灯は残ります。担当者なしになります。</li>
+    </ul>
 
     <h2><span class="en">The candle and the clock</span><span class="ja">蝋燭と時計</span></h2>
     <p class="en">Sometimes a candle looks shorter than it should. The time written on the card is always the true time left. Trust the writing.</p>

@@ -3,6 +3,7 @@ import { t } from "./i18n";
 /** Where the task is in the work. Overdue is not a status: it is derived from `due` (see `isOverdue`). */
 export type Status = "todo" | "doing" | "done";
 export const STATUSES: Status[] = ["todo", "doing", "done"];
+export const MEMBERS_STORAGE_KEY = "tomoshibi.members";
 
 export interface Task {
   id: string;
@@ -30,9 +31,20 @@ export interface Task {
   updated: number;
 }
 
+/** Shown and set now. Enforced once sign-in exists (see docs/team.md). */
+export type Role = "owner" | "admin" | "member" | "viewer";
+export const ROLES: Role[] = ["owner", "admin", "member", "viewer"];
+
 export interface Member {
   id: string;
   name: string;
+  role: Role;
+  created: number;
+  /**
+   * Last time this member used the app. Without sign-in this is only known for the member
+   * marked as "me" on this device. With sign-in it will come from each account.
+   */
+  lastSeen?: number;
 }
 
 export interface Stats {
@@ -133,10 +145,48 @@ export function saveStats(s: Stats): void {
 export function loadMembers(): Member[] {
   try {
     const v = JSON.parse(localStorage.getItem(MEMBERS_KEY) ?? "[]");
-    return Array.isArray(v) ? v.filter((m) => m && typeof m.id === "string" && typeof m.name === "string") : [];
+    if (!Array.isArray(v)) return [];
+    const now = Date.now();
+    return v.filter((m) => m && typeof m.id === "string" && typeof m.name === "string").map((m) => ({
+      id: m.id,
+      name: m.name,
+      role: ROLES.includes(m.role) ? m.role : "member",
+      created: isNum(m.created) ? m.created : now,
+      lastSeen: isNum(m.lastSeen) ? m.lastSeen : undefined,
+    }));
   } catch {
     return [];
   }
+}
+
+export function newMember(name: string, role: Role = "member"): Member {
+  return { id: crypto.randomUUID(), name, role, created: Date.now() };
+}
+
+/* ---------- "me": which member uses this device ---------- */
+const ME_KEY = "tomoshibi.me";
+export function getMe(): string | null {
+  try { return localStorage.getItem(ME_KEY); } catch { return null; }
+}
+export function setMe(id: string | null): void {
+  try { if (id) localStorage.setItem(ME_KEY, id); else localStorage.removeItem(ME_KEY); } catch { onSaveFail?.(); }
+}
+
+const SEEN_EVERY = 60_000;
+/**
+ * Record that "me" is here. Written at most once a minute. Reads the stored list fresh,
+ * so it never overwrites changes made in another tab.
+ */
+export function touchMe(force = false): void {
+  const me = getMe();
+  if (!me) return;
+  const list = loadMembers();
+  const m = list.find((x) => x.id === me);
+  if (!m) return;
+  const now = Date.now();
+  if (!force && m.lastSeen && now - m.lastSeen < SEEN_EVERY) return;
+  m.lastSeen = now;
+  saveMembers(list);
 }
 
 export function saveMembers(m: Member[]): void {
