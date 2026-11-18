@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "deploy:check": "npm run typecheck && cf deploy --dry-run",
     "deploy": "npm run typecheck && cf deploy",
+    "deploy:secrets": "npm run typecheck && cf deploy --secrets-file .env.worker.production",
     "cf:whoami": "cf auth whoami",
     "typecheck": "tsc --noEmit && cf workers types && tsc -p worker"
   },

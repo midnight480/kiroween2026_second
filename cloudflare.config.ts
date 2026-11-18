@@ -21,6 +21,10 @@ export default defineConfig({
 			// Neon への接続。Hyperdrive の設定 tomoshibi-db (キャッシュ無効)。
 			// 手元の開発では .env.local の CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE で直接つなぐ
 			HYPERDRIVE: bindings.hyperdrive({ id: "30df9adadb30407ca0cfc43dd07dff9e" }),
+			// Clerk の本番の Secret Key (sk_live_)。値は git 管理外の .env.worker.production に置き、
+			// npm run deploy:secrets で上げる。宣言しておくと、入っていないままのデプロイは失敗する。
+			// 手元の開発では .env.development.local の sk_test_ が使われる
+			CLERK_SECRET_KEY: bindings.secret(),
 		},
 		// Neon (aws ap-southeast-1) の近くで Worker を動かす
 		placement: { region: "aws:ap-southeast-1" },

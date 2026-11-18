@@ -108,14 +108,31 @@ curl -s http://localhost:5173/api/health
 
 ### 秘密の値
 
-- Clerk の Secret Key などは `npx cf workers secrets update` で入れる (`--help` で引数を確かめる。値は引数に書かない)。
-- 手元用の値は `.env.local` などに置き、git に入れない。
+| 名前 | 本番の Worker | 手元の開発 |
+|---|---|---|
+| `CLERK_SECRET_KEY` | `sk_live_`。`.env.worker.production` (git 管理外、権限 600) に置き、`npm run deploy:secrets` で上げる。2026-11-18 に登録済み | `.env.development.local` の `sk_test_` (Vite プラグインが読む) |
+
+- `cloudflare.config.ts` で `bindings.secret()` として宣言している。宣言したシークレットが Worker に入っていないと、デプロイは失敗する (`--dry-run` では検査されない)。
+- 一度上げたシークレットは、その後の `npm run deploy` (ファイルなし) でも残る。2026-11-18 に確かめた。値を変えるときと、新しいシークレットを足すときだけ `npm run deploy:secrets` を使う。
+- `cf deploy --secrets-file` は、ファイルの中で設定に宣言したキーだけを上げる。値はコマンドの引数にも画面にも出ない。
+- `npx cf workers secrets update` は値を `--text` (引数) でしか受け取らないので使わない。ダッシュボード (Settings > Variables and Secrets) で入れてもよい。
+- `.env.worker.production` の作り方 (値を画面に出さない):
+
+```bash
+umask 077
+npx -y clerk@latest env pull --instance ins_3MHTMQGOd7lWTTgFeh5Mfbmk9yp --print | grep '^CLERK_SECRET_KEY=' > .env.worker.production
+cut -d= -f2 .env.worker.production | cut -c1-8   # sk_live_ と出れば成功
+```
+
+- シークレットの名前の一覧: `npx cf workers secrets list --worker kiroween2026` (値は出ない)。
+- Worker が読むのは Clerk の Secret Key だけ。Neon の接続情報は Hyperdrive の設定にあるので、Worker のシークレットには入れない。
 
 ### デプロイと確認
 
 ```bash
 npm run deploy:check   # 型チェック (画面、Env の型の生成、Worker) → ビルド → 検査だけ。何も公開しない
-npm run deploy         # 同じ流れで公開
+npm run deploy         # 同じ流れで公開 (シークレットは前の版から引き継ぐ)
+npm run deploy:secrets # .env.worker.production のシークレットも一緒に上げて公開
 curl -s https://tomoshibi.midnight480.com/api/health
 ```
 

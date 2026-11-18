@@ -34,7 +34,7 @@ Kiroween 2026 (https://kiroween.devpost.com/) の **Costume Contest** 部門向�
   - `.env.development.local`: `npm run dev` のときだけ読まれる。Clerk の開発用キー (`npx -y clerk@latest env pull --instance dev --file .env.development.local`)。
   - `.env.production.local`: `npm run build` / `deploy` のとき。Clerk の本番用キー。ない場合はサインインなしで公開される。
   - `.env.local`: 全ての mode。Neon の接続情報 (neon CLI が書く)。
-  - 画面側に渡るのは `VITE_` で始まる変数だけです。`CLERK_SECRET_KEY` と `DATABASE_URL` は画面側のコードで使いません。Worker では `cf workers secrets update` で入れます。
+  - 画面側に渡るのは `VITE_` で始まる変数だけです。`CLERK_SECRET_KEY` と `DATABASE_URL` は画面側のコードで使いません。Worker の `CLERK_SECRET_KEY` (本番は `sk_live_`) は `.env.worker.production` に置き、`npm run deploy:secrets` で入れます (`docs/deploy.md`)。`DATABASE_URL` は Worker に入れません (Hyperdrive 経由)。
   - 本番のビルドに開発用のキー (`pk_test_`) が入っても、`src/auth.ts` がサインインを止めます。
 - デプロイ先は Cloudflare Workers (静的アセット)。公開ドメインは `tomoshibi.midnight480.com` で、DNS も Cloudflare で管理しています。
 - 外部画像・外部素材は使いません。著作物 (貞子など特定作品の画像) は取り込みません。
@@ -47,7 +47,8 @@ npm run dev      # http://localhost:5173/?debug でデバッグAPI有効。/api/
 npm run build    # tsc --noEmit && vite build。変更後は必ず通すこと
 npm run typecheck     # 画面の型チェック、Env の型の生成 (cf workers types)、Worker の型チェック
 npm run deploy:check  # 型チェックとビルドをして、デプロイの検査だけ行う (何も公開しない)
-npm run deploy        # 型チェックとビルドをして、Cloudflare Workers へデプロイ
+npm run deploy        # 型チェックとビルドをして、Cloudflare Workers へデプロイ (シークレットは前の版から引き継ぐ)
+npm run deploy:secrets # 上に加えて .env.worker.production のシークレット (CLERK_SECRET_KEY) も上げる
 npm run cf:whoami     # cf のログイン状態を確認 (未ログインなら npx cf auth login)
 ```
 
