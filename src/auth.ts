@@ -5,13 +5,21 @@
  * Tasks are not synced yet. Sign-in only identifies the person until the API exists (docs/deploy.md, stage 2).
  */
 import type { Clerk as ClerkType } from "@clerk/clerk-js";
-import { t } from "./i18n";
+import { t, getLang } from "./i18n";
 
 declare global {
   interface Window { __internal_ClerkUICtor?: unknown }
 }
 
 let clerk: ClerkType | null = null;
+let rootEl: HTMLElement | null = null;
+
+/** Clerk's own text in the app's language. English is Clerk's default. */
+async function localization(): Promise<object | undefined> {
+  if (getLang() !== "ja") return undefined;
+  const { jaJP } = await import("@clerk/localizations");
+  return jaJP;
+}
 const listeners: Array<() => void> = [];
 
 export const authUser = () => clerk?.user ?? null;
@@ -74,6 +82,7 @@ function render(root: HTMLElement) {
 
 /** Start Clerk in the background. Safe to call when no key is set. */
 export async function initAuth(root: HTMLElement): Promise<void> {
+  rootEl = root;
   const key = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
   if (!key) { root.hidden = true; return; }
   // A production build must not talk to the development instance (strict limits). Keys come from
@@ -92,7 +101,7 @@ export async function initAuth(root: HTMLElement): Promise<void> {
     await c.load({
       ui: { ClerkUI: window.__internal_ClerkUICtor },
       appearance: appearance(),
-      // Clerk's own text follows the browser; the app's language switch covers the rest
+      localization: await localization(),
     } as Parameters<ClerkType["load"]>[0]);
     clerk = c;
     let last = c.user?.id ?? null;
@@ -113,7 +122,17 @@ export async function initAuth(root: HTMLElement): Promise<void> {
   }
 }
 
-/** Language changed: redraw the button's text. */
-export function refreshAuthText(root: HTMLElement): void {
-  if (clerk && !clerk.user) render(root);
+/**
+ * Language or theme changed: redraw our button, and pass the new text and colours to Clerk's
+ * components. Clerk has no public API for this, so a failure only means the change shows on the next load.
+ */
+export async function refreshAuth(): Promise<void> {
+  if (!clerk || !rootEl) return;
+  if (!clerk.user) render(rootEl);
+  try {
+    const c = clerk as unknown as { __internal_updateProps?: (p: object) => Promise<void> | undefined };
+    await c.__internal_updateProps?.({ options: { appearance: appearance(), localization: (await localization()) ?? {} } });
+  } catch (e) {
+    console.warn("[tomoshibi] could not update Clerk's language:", e);
+  }
 }

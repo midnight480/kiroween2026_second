@@ -493,3 +493,6 @@ body.safe .proj-menu { animation: none; }
 .auth-btn:focus-visible { outline: 2px solid var(--flame); outline-offset: 2px; }
 .auth-user { display: flex; align-items: center; min-width: 28px; min-height: 28px; }
 @media (max-width: 720px) { .auth-btn { font-size: 12px; letter-spacing: 0; padding: 5px 8px; } }
+.pagebar .auth { margin-left: 0; }
+.pagebar .nav { margin-right: auto; }
+.doc h1 small { white-space: nowrap; }

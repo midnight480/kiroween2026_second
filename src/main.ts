@@ -11,7 +11,7 @@ import { t, setLang, applyI18n, detectLang, formatDue, type Lang, type Key } fro
 import { initDialog, openNew, openEdit, isOpen as isTaskDialogOpen, MAX_MS } from "./dialog";
 import { initProjectDialog, openNewProject, openProjectSettings, isProjectDialogOpen } from "./projectDialog";
 import { describe, icon } from "./links";
-import { initAuth, refreshAuthText } from "./auth";
+import { initAuth, refreshAuth } from "./auth";
 
 const isOpen = () => isTaskDialogOpen() || isProjectDialogOpen() || menuOpen();
 
@@ -101,7 +101,7 @@ function changeLang(l: Lang) {
   setLang(l);
   document.querySelectorAll<HTMLElement>(".gate-lang button").forEach((b) => b.classList.toggle("on", b.dataset.lang === l));
   if (undo) $("undo-text").textContent = t(undo.key);
-  refreshAuthText($("auth"));
+  void refreshAuth();
   refresh();
   saveSettings();
 }
@@ -117,7 +117,7 @@ try {
 safeBox.addEventListener("change", () => { safeGate.checked = safeBox.checked; applySettings(); });
 muteBox.addEventListener("change", applySettings);
 safeGate.addEventListener("change", () => { safeBox.checked = safeGate.checked; applySettings(); });
-themeSel.addEventListener("change", () => { applyAtmosphere(); saveSettings(); });
+themeSel.addEventListener("change", () => { applyAtmosphere(); saveSettings(); void refreshAuth(); });
 langSel.addEventListener("change", () => changeLang(langSel.value as Lang));
 document.querySelectorAll<HTMLElement>(".gate-lang button").forEach((b) =>
   b.addEventListener("click", () => changeLang(b.dataset.lang as Lang)));

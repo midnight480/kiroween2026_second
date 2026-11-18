@@ -75,10 +75,11 @@
 
 ## 認証 (Clerk。開発インスタンスで導入済み)
 
-- `@clerk/clerk-js` 6.x。`src/auth.ts` が、看板を描いた後に Clerk の UI を Clerk のドメインから読み込む。キーがない、読み込めない場合はボタンを隠し、ゲストのまま動く。
-- アプリは `Tomoshibi` (`app_3MHQJYEwGH5P8muc6SPYxlAdPXx`)。開発インスタンスのみ。本番インスタンスは未作成。
+- `@clerk/clerk-js` 6.x と `@clerk/localizations` (日本語)。看板・名簿・ヘルプの3ページにボタンがある。言語やテーマを切り替えると、Clerk の内部 API (`__internal_updateProps`) で文言と色を差し替える。公開の API ではないので、失敗したら次にページを開いたときに反映される。
+- `src/auth.ts` が、看板を描いた後に Clerk の UI を Clerk のドメインから読み込む。キーがない、読み込めない場合はボタンを隠し、ゲストのまま動く。
+- アプリは `Tomoshibi` (`app_3MHQJYEwGH5P8muc6SPYxlAdPXx`)。開発インスタンスと、本番インスタンス (`tomoshibi.midnight480.com`、2026-11-18 に DNS・SSL まで完了。Frontend API は `clerk.tomoshibi.midnight480.com`)。本番用のキーは `tomoshibi.midnight480.com` からしか使えないので、手元 (localhost) で本番のビルドを開くとサインインのボタンは出ない (正常)。
 - 注意: `npx clerk init` は Vite のプロジェクトで `src/main.ts` を丸ごと置き換える。再実行しない。開発用のキーの取り直しは `npx -y clerk@latest env pull --instance dev --file .env.development.local`。
-- 未対応: タスクの同期、役割の権限、全員分の最後に見た時、サインインしたユーザーと名簿の「自分」の結びつけ、Clerk の画面の日本語化 (`@clerk/localizations` が要る)。
+- 未対応: タスクの同期、役割の権限、全員分の最後に見た時、サインインしたユーザーと名簿の「自分」の結びつけ、
 
 ### 本番に出す前に
 - キーは mode ごとのファイルで分ける (`.env.example`)。開発用は `.env.development.local`、本番用は `.env.production.local`。本番インスタンスを作るまでは `.env.production.local` を置かないので、公開版はサインインなしのゲスト版になる。本番のビルドに `pk_test_` が入った場合も、`src/auth.ts` がサインインを止める (手元で試すときだけ `VITE_CLERK_ALLOW_DEV_KEY=1`)。
