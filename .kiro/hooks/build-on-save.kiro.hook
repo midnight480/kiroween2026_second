@@ -1,0 +1,14 @@
+{
+  "enabled": true,
+  "name": "Build check on save",
+  "description": "ソースを保存したら、型検査とビルドを通す。",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": ["src/**/*.ts", "*.html", "vite.config.ts"]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "`npm run build` を実行し、失敗したら原因を直して再実行してください。通ったら、変更の内容を1文で報告してください。依存パッケージは足さないでください。"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "enabled": true,
+  "name": "i18n parity",
+  "description": "辞書を保存したら、英語と日本語のキーが揃っているか確認する。",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": ["src/i18n.ts"]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "`src/i18n.ts` の英語 (en) と日本語 (ja) のキーが揃っているか確認し、足りないほうを足してください。和ホラーの語 (灯、遅、うしろ、遅かったね、数え歌) は辞書に入れず、どの言語でも日本語のまま出す方針です。"
+  }
+}

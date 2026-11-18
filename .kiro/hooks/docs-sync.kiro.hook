@@ -1,0 +1,13 @@
+{
+  "enabled": true,
+  "name": "Sync docs",
+  "description": "手動で実行する。実装と AGENTS.md、docs/ の食い違いを洗い出して直す。",
+  "version": "1",
+  "when": {
+    "type": "userTriggered"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "`src/` の実装と、`AGENTS.md`、`docs/`、`.kiro/` の記述を突き合わせてください。ファイル構成、データ形式、機能の状態 (✅/⬜)、ショートカット、実装済みの機能が、実装と合っているか確認します。食い違いは、実装を正として文書を直してください。`.kiro/specs/*/tasks.md` のチェックも、実装の状態に合わせます。直した点を一覧で報告してください。"
+  }
+}

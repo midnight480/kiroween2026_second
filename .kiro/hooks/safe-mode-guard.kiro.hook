@@ -1,0 +1,14 @@
+{
+  "enabled": true,
+  "name": "Safe mode guard",
+  "description": "演出のファイルを保存したら、Safe mode、Mute、可読性、ドキュメントの更新を確認する。",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": ["src/curse.ts", "src/presence.ts", "src/audio.ts", "src/style.css"]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "直前の変更を、`.kiro/steering/horror-design.md` の8項目で確認してください。(1) 新しい演出は `docs/ui-mapping.md` に「助ける機能」が書かれているか。(2) Safe mode で閃光、人影、女、大音量が無効か。(3) Mute で情報が失われないか。(4) `due` などの実データを変えていないか。(5) ライトとダークの両方で本文が読めるか。(6) 新しい音は `docs/audio.md` に、和ホラーの要素は `docs/japanese-horror.md` に書かれているか。足りない点があれば、直すか、ユーザーに確認してください。問題がなければ「確認済み」とだけ返してください。"
+  }
+}
