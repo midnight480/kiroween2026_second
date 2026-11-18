@@ -496,3 +496,27 @@ body.safe .proj-menu { animation: none; }
 .pagebar .auth { margin-left: 0; }
 .pagebar .nav { margin-right: auto; }
 .doc h1 small { white-space: nowrap; }
+
+/* ---------- cookie notice (consent.ts): a strip of paper at the bottom, plain and readable ---------- */
+.cc { position: fixed; left: 16px; right: 16px; bottom: 16px; z-index: 2100; max-width: 760px; margin: 0 auto; display: flex; align-items: center; gap: 12px 20px; flex-wrap: wrap; padding: 14px 18px; background: var(--paper); color: var(--ink); border: 1px solid var(--ofuda-line); box-shadow: 0 6px 24px #0008; font-size: 14px; line-height: 1.7; }
+.cc p { margin: 0; flex: 1 1 320px; }
+.cc a { color: var(--ink); text-decoration: underline; }
+.cc-btns { display: flex; gap: 10px; flex-wrap: wrap; }
+.cc button { min-height: 40px; padding: 8px 16px; font: inherit; font-size: 13px; cursor: pointer; letter-spacing: .05em; }
+.cc .cc-ok { margin: 0; background: var(--ink); color: var(--paper); border: 1px solid var(--ink); }
+.cc .cc-min { background: transparent; color: var(--ink); border: 1px solid var(--ink-soft); }
+.cc button:focus-visible { outline: 2px solid var(--flame); outline-offset: 2px; }
+@media (max-width: 720px) {
+  .cc { left: 8px; right: 8px; bottom: 8px; padding: 12px 14px; }
+  .cc-btns { width: 100%; }
+  .cc button { flex: 1 1 140px; }
+}
+
+/* privacy link: board footer and side pages */
+#bottom .foot-link { color: var(--text-dim); }
+#bottom .foot-link:hover { color: var(--flame); }
+.doc-foot { margin-top: 40px; font-size: 13px; }
+.doc h3 { font-size: 14px; letter-spacing: .1em; margin: 18px 0 4px; }
+.doc code { font-size: 12px; overflow-wrap: anywhere; }
+.doc button.ghost { font: inherit; font-size: 13px; padding: 8px 14px; min-height: 40px; background: transparent; color: var(--text); border: 1px solid var(--col-line); cursor: pointer; }
+.doc button.ghost:hover { border-color: var(--flame); color: var(--flame); }

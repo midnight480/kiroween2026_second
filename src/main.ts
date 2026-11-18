@@ -2,7 +2,7 @@ import "./style.css";
 import * as audio from "./audio";
 import {
   load, save, loadStats, saveStats, loadMembers, saveMembers, newMember, touchMe, MEMBERS_STORAGE_KEY, loadInfo, setSaveFailHandler,
-  loadProjects, saveProjects, newProject, getCurrentProject, setCurrentProject, ensureProjects, PROJECTS_STORAGE_KEY, type Project, type FieldDef,
+  loadProjects, saveProjects, newProject, projectName, getCurrentProject, setCurrentProject, ensureProjects, PROJECTS_STORAGE_KEY, type Project, type FieldDef,
   formatLeft, truePct, visualPct, isOverdue, STATUSES, type Task, type Status, type Member, type Stats,
 } from "./store";
 import { playCurse } from "./curse";
@@ -11,7 +11,9 @@ import { t, setLang, applyI18n, detectLang, formatDue, type Lang, type Key } fro
 import { initDialog, openNew, openEdit, isOpen as isTaskDialogOpen, MAX_MS } from "./dialog";
 import { initProjectDialog, openNewProject, openProjectSettings, isProjectDialogOpen } from "./projectDialog";
 import { describe, icon } from "./links";
-import { initAuth, refreshAuth } from "./auth";
+import { initAuth, refreshAuth, allowAuth, authUser, onAuthChange, sessionToken } from "./auth";
+import { initConsent, refreshConsent } from "./consent";
+import * as ledger from "./sync";
 
 const isOpen = () => isTaskDialogOpen() || isProjectDialogOpen() || menuOpen();
 
@@ -102,7 +104,9 @@ function changeLang(l: Lang) {
   document.querySelectorAll<HTMLElement>(".gate-lang button").forEach((b) => b.classList.toggle("on", b.dataset.lang === l));
   if (undo) $("undo-text").textContent = t(undo.key);
   void refreshAuth();
-  refresh();
+  refreshConsent();
+  // render, not only refresh: the project name (default names follow the language) and the menu
+  render();
   saveSettings();
 }
 
@@ -323,7 +327,7 @@ initDialog({
     if (input.status !== task.status) setStatus(task, input.status);
     persist();
     render();
-    if (moved) announce(t("liveMoved", { col: projects.find((p) => p.id === task.projectId)?.name ?? "", title: task.title }));
+    if (moved) announce(t("liveMoved", { col: (() => { const p = projects.find((p) => p.id === task.projectId); return p ? projectName(p) : ""; })(), title: task.title }));
     return null;
   },
 });
@@ -347,7 +351,7 @@ function switchProject(id: string, sound = true) {
   setCurrentProject(id);
   if (sound) audio.rustle(0.5);
   render();
-  announce(t("liveProject", { name: cur()?.name ?? "" }));
+  announce(t("liveProject", { name: cur() ? projectName(cur()!) : "" }));
 }
 
 function buildMenu() {
@@ -357,7 +361,7 @@ function buildMenu() {
     projects.map((p) => {
       const open = tasks.filter((x) => x.projectId === p.id && x.status !== "done").length;
       const late = tasks.filter((x) => x.projectId === p.id && isOverdue(x, now)).length;
-      return item("mi proj-item", `<span class="dot" aria-hidden="true"></span><span class="pn">${esc(p.name)}</span>
+      return item("mi proj-item", `<span class="dot" aria-hidden="true"></span><span class="pn">${esc(projectName(p))}</span>
         <span class="pc">${esc(t("projOpenCount", { n: open }))}${late ? ` · <b>${late} 遅</b>` : ""}</span>`,
         `role="menuitemradio" aria-checked="${p.id === currentId}" data-id="${esc(p.id)}"`);
     }).join("") +
@@ -428,7 +432,7 @@ initProjectDialog({
     saveProjects(projects);
     persist();
     switchProject(projects[0].id);
-    announce(t("projDeleted", { name: project.name }));
+    announce(t("projDeleted", { name: projectName(project) }));
     return null;
   },
   onClose() {
@@ -662,7 +666,7 @@ function render() {
     $(`n-${s}`).textContent = String(items.length);
   }
   if (focused && document.contains(focused) && document.activeElement !== focused) focused.focus({ preventScroll: true });
-  $("proj-name").textContent = cur()?.name ?? "";
+  $("proj-name").textContent = cur() ? projectName(cur()!) : "";
   if (menuOpen()) buildMenu();
   refresh();
 }
@@ -825,6 +829,57 @@ addEventListener("keydown", (e) => {
   }
 });
 
+/* ---------- signed in: the ledger lives on the server (src/sync.ts) ---------- */
+/** Put a new set of tasks and projects on the board (signing in or out, another device's changes). */
+function replaceData(next: { tasks: Task[]; projects: Project[] }) {
+  hideUndo();
+  for (const el of els.values()) el.remove();
+  els.clear();
+  tasks = next.tasks;
+  projects = next.projects;
+  if (ensureProjects(projects, tasks, t("projFirst"))) { saveProjects(projects); save(tasks); }
+  if (!projects.some((p) => p.id === currentId)) currentId = projects.some((p) => p.id === getCurrentProject()) ? getCurrentProject()! : projects[0].id;
+  setCurrentProject(currentId);
+  render();
+}
+let ledgerUser: string | null = null;
+async function followAuth() {
+  const user = authUser()?.id ?? null;
+  if (user === ledgerUser) return;
+  ledgerUser = user;
+  if (ledger.active()) await ledger.stop();
+  if (!user) {
+    // signed out: this device's guest ledger, as it was before signing in
+    replaceData({ tasks: load(), projects: loadProjects() });
+    return;
+  }
+  try {
+    const server = await ledger.fetchData(sessionToken);
+    if (ledgerUser !== user) return; // signed out or switched while loading
+    const first = !server.tasks.length && !server.projects.length;
+    ledger.start(sessionToken, server, () => notify("errSync", 6000));
+    // First sign-in: this device's candles move to the server. The guest copy stays in localStorage.
+    replaceData(first ? { tasks: structuredClone(tasks), projects: structuredClone(projects) } : server);
+    if (first) { save(tasks); saveProjects(projects); }
+    announce(t(first && tasks.length ? "syncMoved" : "syncOn"));
+  } catch (e) {
+    console.warn("[tomoshibi] could not load the ledger:", e);
+    ledgerUser = null; // try again on the next sign-in change or when the tab comes back
+    notify("errSyncLoad", 8000);
+  }
+}
+/** Coming back to the tab: pick up changes made on another device (only when nothing is waiting to be sent). */
+async function pullLedger() {
+  if (!ledger.active() || ledger.pending() || dragging || cursing) return;
+  try {
+    const server = await ledger.fetchData(sessionToken);
+    if (!ledger.active() || ledger.pending()) return;
+    ledger.start(sessionToken, server, () => notify("errSync", 6000));
+    replaceData(server);
+  } catch { /* offline: keep what is on the board */ }
+}
+onAuthChange(() => { void followAuth(); });
+
 /* ---------- boot ---------- */
 setLang(langSel.value as Lang);
 if (ensureProjects(projects, tasks, t("projFirst"))) { saveProjects(projects); save(tasks); }
@@ -835,14 +890,15 @@ changeLang(langSel.value as Lang);
 if (loadInfo.recovered) notify("errBroken", 9000);
 // sign-in is optional and loads in the background; the board never waits for it
 void initAuth($("auth"));
+initConsent(allowAuth);
 setInterval(() => { refresh(); void checkExpiry(); }, 1000);
 // a tab coming back from sleep checks the deadlines at once
-document.addEventListener("visibilitychange", () => { if (!document.hidden) { touchMe(); refresh(); void checkExpiry(); } });
+document.addEventListener("visibilitychange", () => { if (!document.hidden) { touchMe(); refresh(); void checkExpiry(); void pullLedger(); } });
 touchMe(true);
 // the team page, in another tab, renamed or removed someone
 addEventListener("storage", (e) => {
   if (e.key === MEMBERS_STORAGE_KEY) { members = loadMembers(); refresh(); }
-  else if (e.key === PROJECTS_STORAGE_KEY) {
+  else if (e.key === PROJECTS_STORAGE_KEY && !ledger.active()) {
     projects = loadProjects();
     if (ensureProjects(projects, tasks, t("projFirst"))) saveProjects(projects);
     if (!projects.some((p) => p.id === currentId)) currentId = projects[0].id;

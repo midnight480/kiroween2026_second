@@ -1,5 +1,6 @@
 import { detectLang, setLang, type Lang } from "./i18n";
-import { initAuth, refreshAuth } from "./auth";
+import { initAuth, refreshAuth, allowAuth } from "./auth";
+import { initConsent, refreshConsent } from "./consent";
 
 /** Theme and language for the side pages (team, help). Same settings as the board. */
 type Settings = { lang?: string; theme?: string; [k: string]: unknown };
@@ -18,7 +19,7 @@ export function initPage(onLang: () => void = () => {}): void {
     const v = themeSel.value;
     document.documentElement.dataset.theme = v === "light" || (v === "system" && mq.matches) ? "light" : "dark";
   };
-  const applyLang = () => { setLang(langSel.value as Lang); onLang(); void refreshAuth(); };
+  const applyLang = () => { setLang(langSel.value as Lang); onLang(); void refreshAuth(); refreshConsent(); };
   themeSel.addEventListener("change", () => { write({ theme: themeSel.value }); applyTheme(); void refreshAuth(); });
   langSel.addEventListener("change", () => { write({ lang: langSel.value }); applyLang(); });
   mq.addEventListener("change", applyTheme);
@@ -27,4 +28,5 @@ export function initPage(onLang: () => void = () => {}): void {
   // the same optional sign-in as on the board, loaded after the page is drawn
   const auth = document.getElementById("auth");
   if (auth) void initAuth(auth);
+  initConsent(allowAuth);
 }

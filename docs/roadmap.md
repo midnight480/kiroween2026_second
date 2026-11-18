@@ -90,7 +90,7 @@
 
 ユーザーの要望: APIキーを発行し、APIでもタスクを登録できるようにする。Clerk は後で入れる。
 
-- 前提: タスクの保存先をサーバー (Cloudflare Workers + Neon + Hyperdrive) に移す。`localStorage` のままだと、API で登録したタスクが画面に届かない。
+- 前提: タスクの保存先をサーバー (Cloudflare Workers + Neon + Hyperdrive) に移す。サインインした人については移した (2026-11-18、`deploy.md`)。
 - キーの発行: サインインした人が設定画面で発行する。キーは作った直後に1度だけ表示し、DB にはハッシュ (SHA-256) だけを保存する。名前を付けられ、いつでも取り消せる。最後に使った日時を出す。
 - 呼び方: `Authorization: Bearer <key>`。`POST /api/v1/tasks` (登録)、`GET /api/v1/tasks` (一覧)、`PATCH /api/v1/tasks/:id` (状態の変更)。入力の検証は画面と同じ (件名 1〜80文字、期限は1分以上先・1年以内、メモ 500文字)。
 - 担当者は、アカウントの id か、メンバーの id で指定する (自由入力の名前は受けない)。

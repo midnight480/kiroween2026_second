@@ -1,4 +1,4 @@
-import { t } from "./i18n";
+import { t, inAllLangs } from "./i18n";
 import { cleanUrl } from "./links";
 
 /** Where the task is in the work. Overdue is not a status: it is derived from `due` (see `isOverdue`). */
@@ -152,11 +152,24 @@ const valid = (x: unknown): x is Record<string, unknown> =>
 function parse(raw: string): Task[] {
   const v: unknown = JSON.parse(raw);
   if (!Array.isArray(v)) throw new Error("not an array");
-  const now = Date.now();
-  const ok = v.filter(valid).map((x) => normalize(x, now));
+  const ok = normalizeTasks(v);
   if (ok.length !== v.length) backUp(raw); // some entries were unreadable: keep the original
   return ok;
 }
+
+/** Tasks from any source (localStorage or the server): unreadable entries are left out. */
+export function normalizeTasks(v: unknown[]): Task[] {
+  const now = Date.now();
+  return v.filter(valid).map((x) => normalize(x, now));
+}
+
+/**
+ * Where tasks and projects go. Guests keep them in localStorage. A signed-in person's go to the
+ * server instead (src/sync.ts): then localStorage keeps this device's guest ledger untouched.
+ */
+export interface Remote { tasks(tasks: Task[]): void; projects(projects: Project[]): void }
+let remote: Remote | null = null;
+export function setRemote(r: Remote | null): void { remote = r; }
 
 export function load(): Task[] {
   let raw: string | null = null;
@@ -179,6 +192,7 @@ export function load(): Task[] {
 }
 
 export function save(tasks: Task[]): void {
+  if (remote) { remote.tasks(tasks); return; }
   try { localStorage.setItem(KEY, JSON.stringify(tasks)); } catch { onSaveFail?.(); }
 }
 
@@ -259,20 +273,36 @@ function normalizeField(f: Record<string, unknown>): FieldDef | null {
 export function loadProjects(): Project[] {
   try {
     const v = JSON.parse(localStorage.getItem(PROJECTS_KEY) ?? "[]");
-    if (!Array.isArray(v)) return [];
-    return v.filter((p) => p && typeof p.id === "string" && typeof p.name === "string").map((p) => ({
-      id: p.id,
-      name: p.name,
-      created: isNum(p.created) ? p.created : Date.now(),
-      fields: Array.isArray(p.fields) ? p.fields.map(normalizeField).filter((f: FieldDef | null): f is FieldDef => !!f) : [],
-    }));
+    return Array.isArray(v) ? normalizeProjects(v) : [];
   } catch {
     return [];
   }
 }
 
+/** Projects from any source (localStorage or the server): unreadable entries are left out. */
+export function normalizeProjects(v: unknown[]): Project[] {
+  return v.filter((p): p is Record<string, unknown> => !!p && typeof p === "object"
+    && typeof (p as Project).id === "string" && typeof (p as Project).name === "string").map((p) => ({
+    id: p.id as string,
+    name: p.name as string,
+    created: isNum(p.created) ? p.created : Date.now(),
+    fields: Array.isArray(p.fields)
+      ? (p.fields as unknown[]).map((f) => (f && typeof f === "object" ? normalizeField(f as Record<string, unknown>) : null)).filter((f): f is FieldDef => !!f)
+      : [],
+  }));
+}
+
 export function saveProjects(p: Project[]): void {
+  if (remote) { remote.projects(p); return; }
   try { localStorage.setItem(PROJECTS_KEY, JSON.stringify(p)); } catch { onSaveFail?.(); }
+}
+
+/**
+ * The name to show. The first project is made with a default name in the language of that moment;
+ * as long as nobody renamed it, it follows the current language (My project / 最初のプロジェクト).
+ */
+export function projectName(p: Project): string {
+  return inAllLangs("projFirst").includes(p.name) ? t("projFirst") : p.name;
 }
 
 export function newProject(name: string): Project {

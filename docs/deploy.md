@@ -5,7 +5,7 @@
 | 段階 | 内容 | いつ |
 |---|---|---|
 | 1 | 静的配信。Vite のビルド結果を Workers で配る | 完了 |
-| 2 | API と DB。Worker に `/api/*` を足し、Hyperdrive 経由で Neon につなぐ | `/api/health` まで完了。テーブルと API は未着手 |
+| 2 | API と DB。Worker に `/api/*` を足し、Hyperdrive 経由で Neon につなぐ | 完了。サインインした人の課題とプロジェクトを Neon に保存する |
 | 3 | 認証 (Clerk) | 段階2と一緒か、その後 (`roadmap.md` の「検討中: 認証」) |
 
 Cloudflare の操作には `cf` CLI を使います (https://developers.cloudflare.com/cf/)。Wrangler は使いません。`cf` は 2026-11-18 時点で 1.0 のリリース候補 (`1.0.0-rc.1`) です。設定の形式とデプロイのコマンドは安定版扱いですが、あまり使われない API コマンドは 1.0 までに変わることがあります。
@@ -52,7 +52,29 @@ Cloudflare の操作には `cf` CLI を使います (https://developers.cloudfla
 
 ## 段階2: API と DB (Neon + Hyperdrive)
 
-`/api/health` まで完了 (2026-11-18)。本番で `{"ok":true,"db":"up","ms":~90}` を返す。
+完了 (2026-11-18)。サインインした人の課題とプロジェクトは Neon に保存する。ゲストは `localStorage` のまま。
+
+### API
+
+| 経路 | 認証 | 内容 |
+|---|---|---|
+| `GET /api/health` | 不要 | DB に `SELECT 1`。`{"ok":true,"db":"up","ms":…}` |
+| `GET /api/data` | 要 | 本人の `{ tasks: Task[], projects: Project[] }` |
+| `POST /api/sync` | 要 | `{ upsert: { tasks, projects }, remove: { tasks: id[], projects: id[] } }` を1つのトランザクションで適用 |
+
+- 認証は `Authorization: Bearer <Clerk のセッショントークン>`。Worker が `@clerk/backend` の `verifyToken` で検証し、`sub` (Clerk のユーザー ID) の行だけを読み書きする。`authorizedParties` はリクエストのオリジン (画面と API は同じオリジン)。トークンがない、または無効なら 401。
+- 上限: 1リクエスト 1MB、1件 32KB、ID 64文字、1リクエストの変更は種類ごとに 500件、保存は1人あたり課題 2,000件・プロジェクト 100件 (超えたら 409 で何も書かない)。
+- 課題とプロジェクトの中身は、ブラウザが持つ JSON (`src/store.ts` の `Task`、`Project`) をそのまま `data` (jsonb) に入れる。中身の検査と補正は、読み込んだときにブラウザ側の `normalizeTasks` / `normalizeProjects` が行う。
+
+### 画面側の同期 (`src/sync.ts`)
+
+- 看板は今までどおり `save(tasks)` と `saveProjects(projects)` を呼ぶ。サインイン中はそれが `src/sync.ts` に回り、サーバーが最後に受け取った内容と1件ずつ比べて、変わったものだけを 400ms まとめて `/api/sync` に送る。
+- 送れなかった変更は残し、2秒から最大30秒まで間隔を延ばして送り直す。最初の失敗だけ画面で知らせる。ページを離れるときにも一度送る (`keepalive`)。
+- 初めてサインインしたとき (サーバーに何もないとき)、この端末の課題とプロジェクトをサーバーに移す。`localStorage` のゲスト用の控えは消さない。
+- サインアウトすると、この端末のゲスト用の帳面 (`localStorage`) に戻る。
+- タブに戻ったとき、送っていない変更がなければ、サーバーから読み直す (別の端末での変更を拾う)。
+- 名簿、統計、設定、いま開いているプロジェクトは、サインインしても端末の `localStorage` に置く。
+- **既知の制約:** 同じ課題を2つの端末で同時に変えると、後から送ったほうで丸ごと上書きされる。送れていない変更があるままサインアウトすると、その変更はサーバーに届かない。
 
 ### 構成
 
@@ -66,7 +88,9 @@ Cloudflare の操作には `cf` CLI を使います (https://developers.cloudfla
 |---|---|
 | `cloudflare.config.ts` | Worker の設定。入口 `worker/index.ts`、`runWorkerFirst: ["/api/*"]`、Hyperdrive のバインディング `HYPERDRIVE`、`placement` (aws:ap-southeast-1)、カスタムドメイン |
 | `vite.config.ts` | `@cloudflare/vite-plugin` (2.0) を入れる。HTML の3ページは画面側 (`environments.client`) の入口だけに指定する。全体の `build.rollupOptions.input` に書くと、Worker 側のビルドが HTML を入口と見なして失敗する |
-| `worker/index.ts` | Worker のコード。いまは `GET /api/health` だけ。それ以外の `/api/*` は 404 の JSON |
+| `worker/index.ts` | Worker のコード。`/api/health`、`/api/data`、`/api/sync`。それ以外の `/api/*` は 404 の JSON |
+| `src/sync.ts` | サインイン中の保存先 (上の「画面側の同期」) |
+| `db/migrations/*.sql`、`scripts/migrate.mjs` | テーブル。`npm run db:migrate` で `.env.local` の直接接続に流す。流したものは `schema_migrations` に記録し、二度は流さない |
 | `worker/tsconfig.json` | Worker 側の型チェック。画面側の DOM の型と混ざらないよう分けている |
 | `.cloudflare/types/index.d.ts` | `Env` の型。`cf workers types` が `cloudflare.config.ts` から生成する (git に入れない) |
 | `.cloudflare/output/` | ビルド出力。`cf deploy` はここを上げる (git に入れない。`dist/` は使わなくなった) |
@@ -83,11 +107,11 @@ Cloudflare の操作には `cf` CLI を使います (https://developers.cloudfla
 - **未対応:** いまは所有者ロール `neondb_owner` でつないでいる。テーブルの読み書きだけできるアプリ用ロールを別に作り、Hyperdrive の接続先を差し替える (`cf hyperdrive update`)。
 - **未対応:** 開発用ブランチ (`dev`) を作り、手元の開発は `dev`、本番の Hyperdrive は `main` につなぐ。いまは手元も本番も同じブランチ。
 
-### テーブル (未着手)
+### テーブル (作成済み、2026-11-18)
 
-- SQL を `db/migrations/0001_init.sql` のように番号付きでリポジトリに置く (中身は API の仕様が決まってから書く。`roadmap.md` の「API (予定)」)。
-- 適用は、まず `dev` ブランチ、確かめてから `main`。Neon の SQL Editor に貼るか、`psql` で流す。
-- 本番に流す前に、Neon のブランチ (または時点復元) で戻せる状態を作っておく。
+- `db/migrations/0001_init.sql`: `projects` と `tasks` (どちらも `user_id`、`id`、`data jsonb`、`updated_at`。主キーは `(user_id, id)`)、`schema_migrations`。
+- 流し方は `npm run db:migrate`。いまは手元も本番も同じブランチなので、流した時点で本番に効く。
+- テーブルを変えるときは `0002_….sql` を足す。本番に流す前に、Neon のブランチ (または時点復元) で戻せる状態を作っておく。
 
 ### Hyperdrive の設定 (作成済み)
 
@@ -111,6 +135,7 @@ curl -s http://localhost:5173/api/health
 | 名前 | 本番の Worker | 手元の開発 |
 |---|---|---|
 | `CLERK_SECRET_KEY` | `sk_live_`。`.env.worker.production` (git 管理外、権限 600) に置き、`npm run deploy:secrets` で上げる。2026-11-18 に登録済み | `.env.development.local` の `sk_test_` (Vite プラグインが読む) |
+| `DATABASE_URL`、`DATABASE_URL_UNPOOLED`、`NEON_BRANCH`、`NEON_BRANCH_ID`、`NEON_FUNCTION_HOST_SUFFIX` | `.env.local` と同じ値。`npm run secrets:build` が `.env.local` から `.env.worker.production` に写し、`npm run deploy:secrets` で上げる。2026-11-18 に登録済み。**いまの Worker のコードは使わない** (DB へは `HYPERDRIVE` 経由)。Neon の接続情報を変えたら、Hyperdrive の設定と、この5つの両方を更新する | `.env.local` (Vite プラグインが読む) |
 
 - `cloudflare.config.ts` で `bindings.secret()` として宣言している。宣言したシークレットが Worker に入っていないと、デプロイは失敗する (`--dry-run` では検査されない)。
 - 一度上げたシークレットは、その後の `npm run deploy` (ファイルなし) でも残る。2026-11-18 に確かめた。値を変えるときと、新しいシークレットを足すときだけ `npm run deploy:secrets` を使う。
@@ -119,13 +144,15 @@ curl -s http://localhost:5173/api/health
 - `.env.worker.production` の作り方 (値を画面に出さない):
 
 ```bash
+npm run secrets:build   # .env.local の Neon の値を写す。CLERK_SECRET_KEY はファイルにあるものを残す
+# CLERK_SECRET_KEY がまだないときだけ:
 umask 077
-npx -y clerk@latest env pull --instance ins_3MHTMQGOd7lWTTgFeh5Mfbmk9yp --print | grep '^CLERK_SECRET_KEY=' > .env.worker.production
+npx -y clerk@latest env pull --instance ins_3MHTMQGOd7lWTTgFeh5Mfbmk9yp --print | grep '^CLERK_SECRET_KEY=' >> .env.worker.production
 cut -d= -f2 .env.worker.production | cut -c1-8   # sk_live_ と出れば成功
 ```
 
 - シークレットの名前の一覧: `npx cf workers secrets list --worker kiroween2026` (値は出ない)。
-- Worker が読むのは Clerk の Secret Key だけ。Neon の接続情報は Hyperdrive の設定にあるので、Worker のシークレットには入れない。
+- Worker のコードが読むのは `CLERK_SECRET_KEY` と `HYPERDRIVE` だけ。Neon の5つは、ダッシュボードで `.env.local` と同じ値が見えるように入れている (ユーザーの指示、2026-11-18)。
 
 ### デプロイと確認
 

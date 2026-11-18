@@ -14,7 +14,7 @@ export default defineConfig({
     client: {
       build: {
         rolldownOptions: {
-          input: { main: page("./index.html"), members: page("./members.html"), help: page("./help.html") },
+          input: { main: page("./index.html"), members: page("./members.html"), help: page("./help.html"), privacy: page("./privacy.html") },
         },
       },
     },

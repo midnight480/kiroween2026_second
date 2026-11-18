@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- 灯 Tomoshibi: a single candle flame in the dark. Hand-made, no external assets. -->
+  <defs>
+    <radialGradient id="glow" cx="32" cy="27" r="26" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffb347" stop-opacity=".45"/>
+      <stop offset="1" stop-color="#ffb347" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="flame" x1="0" y1="10" x2="0" y2="40" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ff8a1f"/>
+      <stop offset=".55" stop-color="#ffb347"/>
+      <stop offset="1" stop-color="#ffe2a8"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="12" fill="#0d0a08"/>
+  <circle cx="32" cy="27" r="26" fill="url(#glow)"/>
+  <!-- candle -->
+  <rect x="25" y="40" width="14" height="20" rx="1.5" fill="#d8cdb0"/>
+  <path d="M25 41.5c2 1.6 4 .2 5 1.8s3 .4 4-.6 3 .8 5-1.2V40H25z" fill="#f1e8cf"/>
+  <rect x="31.2" y="36" width="1.6" height="5" fill="#2a1f16"/>
+  <!-- flame -->
+  <path d="M32 9c3.6 7.2 9 11.6 9 19.4C41 34.3 37 38 32 38s-9-3.7-9-9.6C23 21.4 28.8 17.4 32 9z" fill="url(#flame)"/>
+  <path d="M32 22c1.8 3.2 4 5.2 4 8.6 0 2.8-1.8 4.6-4 4.6s-4-1.8-4-4.6c0-3.4 2.4-5.2 4-8.6z" fill="#fff6e0"/>
+</svg>

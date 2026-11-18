@@ -22,10 +22,11 @@ interface Task {
   updated: number;
 }
 ```
-- 保存先は `localStorage` の `tomoshibi.tasks.v2`。初回に v1 (`tomoshibi.tasks.v1`) があれば、全て `todo` として移す。v1 のキーは消さない。
+- 保存先は、ゲストなら `localStorage` の `tomoshibi.tasks.v2`、サインインした人なら Neon (`src/sync.ts` から Worker の `/api/sync`。`docs/deploy.md` の段階2)。プロジェクトも同じ。初回に v1 (`tomoshibi.tasks.v1`) があれば、全て `todo` として移す。v1 のキーは消さない。
 - 担当者の一覧は `tomoshibi.members` (`{ id, name, role, created, lastSeen? }[]`)、この端末の「自分」は `tomoshibi.me` (`team.md`)。設定は `tomoshibi.settings` (`safe`, `mute`, `lang`: en / ja, `theme`: system / light / dark)。ヘルプページも同じ設定を読む。
 - 期限切れは `isOverdue()`: `status !== "done"` かつ `due <= now`。`cursed` は呪いを再生済みかだけを表す。
 - 蝋燭の見た目の残り割合は `visualPct = (due - now - penalty) / (due - created)`。時計の残り割合は `truePct = (due - now) / (due - created)`。罰と伝染は `penalty` だけを増やす。
+- Cookie の選択は `tomoshibi.consent` (`all` / `essential`)、サインインしていたかは `tomoshibi.signedIn` (`src/consent.ts`)。灯そのものは Cookie を置かない。Cookie は Clerk のものだけで、`essential` のときはサインインのボタンを押すまで Clerk を読み込まない (サインインしていた人は、ページを開いたときに読み込む)。プライバシーポリシーは `privacy.html`。保存する値を足したら、`privacy.html` の一覧も直す。
 - 統計 `tomoshibi.stats`: `putOut` (完了とお祓いの数)、`late` (そのうち期限後の数)、`burned` (燃やした数)。
 - 読めないデータは `tomoshibi.tasks.broken.<時刻>` に元の文字列を退避してから空で始める (`store.ts` `load()`)。保存に失敗したら `setSaveFailHandler` のコールバックで画面に知らせる。
 - 完了、移動、削除は `main.ts` の `setStatus()` と `burnTask()`。直前の変更の前の状態を `snapshot()` で丸ごと持ち、5秒間だけ戻せる。

@@ -11,7 +11,9 @@
     "deploy": "npm run typecheck && cf deploy",
     "deploy:secrets": "npm run typecheck && cf deploy --secrets-file .env.worker.production",
     "cf:whoami": "cf auth whoami",
-    "typecheck": "tsc --noEmit && cf workers types && tsc -p worker"
+    "typecheck": "tsc --noEmit && cf workers types && tsc -p worker",
+    "db:migrate": "node scripts/migrate.mjs",
+    "secrets:build": "node scripts/worker-secrets.mjs"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "^2.0.0-rc.1",
@@ -21,6 +23,7 @@
     "vite": "^8.3.8"
   },
   "dependencies": {
+    "@clerk/backend": "^3.30.0",
     "@clerk/clerk-js": "^6.44.0",
     "@clerk/localizations": "^4.25.0",
     "@neon/config": "^1.14.3",

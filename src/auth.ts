@@ -2,10 +2,11 @@
  * Optional sign-in with Clerk. The ledger never waits for it: the board is drawn first, and if Clerk
  * is not configured or cannot load (offline, blocked), the app stays a guest app on localStorage.
  *
- * Tasks are not synced yet. Sign-in only identifies the person until the API exists (docs/deploy.md, stage 2).
+ * Signed in, the person's tasks and projects live on the server (src/sync.ts). Guests stay on localStorage.
  */
 import type { Clerk as ClerkType } from "@clerk/clerk-js";
 import { t, getLang } from "./i18n";
+import { authAllowedOnLoad, rememberSignedIn } from "./consent";
 
 declare global {
   interface Window { __internal_ClerkUICtor?: unknown }
@@ -24,6 +25,8 @@ const listeners: Array<() => void> = [];
 
 export const authUser = () => clerk?.user ?? null;
 export const onAuthChange = (fn: () => void) => { listeners.push(fn); };
+/** A fresh session token for our API, or null when signed out. Clerk caches and renews it. */
+export const sessionToken = async (): Promise<string | null> => (await clerk?.session?.getToken()) ?? null;
 
 /** Paper, ink and vermilion, so the Clerk card looks like one more ofuda. Direct colours only (Clerk's advice). */
 function appearance() {
@@ -80,7 +83,30 @@ function render(root: HTMLElement) {
   }
 }
 
-/** Start Clerk in the background. Safe to call when no key is set. */
+let pubKey: string | null = null;
+let starting: Promise<void> | null = null;
+let loadFailed = false;
+
+/** A sign-in button that loads Clerk only when pressed (cookie choice "essential", see consent.ts). */
+function renderLazy(root: HTMLElement) {
+  root.innerHTML = "";
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "auth-btn";
+  btn.textContent = t("signIn");
+  btn.title = t("signInTitle");
+  btn.addEventListener("click", () => {
+    btn.disabled = true;
+    void start(root, true);
+  });
+  root.appendChild(btn);
+  root.hidden = false;
+}
+
+/**
+ * Set up sign-in. Safe to call when no key is set. Clerk (and its cookies) loads with the page only
+ * when the cookie notice was accepted or the person was signed in before; otherwise on the first press.
+ */
 export async function initAuth(root: HTMLElement): Promise<void> {
   rootEl = root;
   const key = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
@@ -92,6 +118,23 @@ export async function initAuth(root: HTMLElement): Promise<void> {
     root.hidden = true;
     return;
   }
+  pubKey = key;
+  if (authAllowedOnLoad()) await start(root, false);
+  else renderLazy(root);
+}
+
+/** The cookie notice was accepted: load Clerk now if it is not loaded yet. */
+export function allowAuth(): void {
+  if (rootEl && pubKey && !clerk) void start(rootEl, false);
+}
+
+function start(root: HTMLElement, openSignIn: boolean): Promise<void> {
+  starting ??= load(root, pubKey!).finally(() => { starting = null; });
+  return starting.then(() => { if (openSignIn && clerk && !clerk.user) clerk.openSignIn({ appearance: appearance() }); });
+}
+
+async function load(root: HTMLElement, key: string): Promise<void> {
+  if (clerk) return;
   try {
     // the Frontend API domain is encoded in the publishable key
     const domain = atob(key.split("_")[2] ?? "").replace(/\$$/, "");
@@ -105,10 +148,12 @@ export async function initAuth(root: HTMLElement): Promise<void> {
     } as Parameters<ClerkType["load"]>[0]);
     clerk = c;
     let last = c.user?.id ?? null;
+    rememberSignedIn(!!last);
     c.addListener(() => {
       const now = c.user?.id ?? null;
       if (now === last) return;
       last = now;
+      rememberSignedIn(!!now);
       render(root);
       listeners.forEach((fn) => fn());
     });
@@ -118,6 +163,7 @@ export async function initAuth(root: HTMLElement): Promise<void> {
   } catch (e) {
     // Sign-in is optional. Without it the ledger still works as a guest.
     console.warn("[tomoshibi] sign-in unavailable:", e);
+    loadFailed = true;
     root.hidden = true;
   }
 }
@@ -127,7 +173,8 @@ export async function initAuth(root: HTMLElement): Promise<void> {
  * components. Clerk has no public API for this, so a failure only means the change shows on the next load.
  */
 export async function refreshAuth(): Promise<void> {
-  if (!clerk || !rootEl) return;
+  if (!rootEl) return;
+  if (!clerk) { if (pubKey && !starting && !loadFailed) renderLazy(rootEl); return; }
   if (!clerk.user) render(rootEl);
   try {
     const c = clerk as unknown as { __internal_updateProps?: (p: object) => Promise<void> | undefined };

@@ -1,6 +1,6 @@
 import * as audio from "./audio";
 import { t, formatDue, type Key } from "./i18n";
-import { formatLeft, MAX_LINKS, type FieldDef, type FieldValue, type Link, type Member, type Project, type Status, type Task } from "./store";
+import { formatLeft, MAX_LINKS, projectName, type FieldDef, type FieldValue, type Link, type Member, type Project, type Status, type Task } from "./store";
 import { cleanUrl, describe, icon } from "./links";
 
 export const MIN_MS = 60_000;
@@ -183,7 +183,7 @@ function open(task?: Task) {
   fieldDefs = proj?.fields ?? [];
   // the project picker only matters when there is somewhere else to go
   const all = ctx.projects();
-  fProject.innerHTML = all.map((p) => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join("");
+  fProject.innerHTML = all.map((p) => `<option value="${esc(p.id)}">${esc(projectName(p))}</option>`).join("");
   fProject.value = proj?.id ?? all[0]?.id ?? "";
   $("f-project-wrap").hidden = all.length < 2;
   links = (task?.links ?? []).map((l) => ({ ...l }));

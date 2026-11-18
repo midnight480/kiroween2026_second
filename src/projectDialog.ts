@@ -1,6 +1,6 @@
 import * as audio from "./audio";
 import { t, type Key } from "./i18n";
-import { FIELD_TYPES, type FieldDef, type FieldType, type Project } from "./store";
+import { FIELD_TYPES, projectName, type FieldDef, type FieldType, type Project } from "./store";
 
 const TYPE_KEY: Record<FieldType, Key> = {
   text: "ftText", number: "ftNumber", select: "ftSelect", date: "ftDate", checkbox: "ftCheckbox", url: "ftUrl",
@@ -81,7 +81,7 @@ function open(project?: Project, canDelete = false) {
   clearError();
   $("pd-title").textContent = t(project ? "projDlgEdit" : "projDlgNew");
   $("pd-ok").textContent = t(project ? "save" : "projCreate");
-  nameIn.value = project?.name ?? "";
+  nameIn.value = project ? projectName(project) : "";
   rows = (project?.fields ?? []).map((f) => ({ ...f, options: f.options ? [...f.options] : undefined }));
   renderRows();
   del.hidden = !project || !canDelete;

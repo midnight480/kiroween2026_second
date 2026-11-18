@@ -141,7 +141,17 @@ const en = {
   errMemberDup: "The salt crumbled. Someone with that name is already here.",
   fProject: "Project",
   signIn: "Sign in",
-  signInTitle: "Optional. Your candles stay on this device either way.",
+  signInTitle: "Optional. Signed in, your candles are kept in the ledger and follow you to other devices.",
+  errSync: "Could not reach the ledger. Will keep trying; your changes are kept on this page.",
+  errSyncLoad: "Could not open your ledger. Showing this device's candles.",
+  syncMoved: "This device's candles were moved into your ledger.",
+  syncOn: "Your ledger is open.",
+  consentAria: "Cookies",
+  consentText: "Tomoshibi uses no analytics or advertising cookies. The only cookies come from Clerk, and only for sign-in. Choose when they may be set.",
+  consentMore: "Privacy policy",
+  consentOk: "OK, load sign-in now",
+  consentEssential: "Only when I sign in",
+  navPrivacy: "Privacy",
   projMenuAria: "Switch project (P)",
   projNew: "+ New project",
   projSettings: "Project settings…",
@@ -319,7 +329,17 @@ const ja: Record<keyof typeof en, string> = {
   errMemberDup: "塩が崩れた。同じ名の者がもういる。",
   fProject: "プロジェクト",
   signIn: "サインイン",
-  signInTitle: "任意です。どちらでも、灯はこの端末に残ります。",
+  signInTitle: "任意です。サインインすると、灯は帳面に残り、ほかの端末でも見られます。",
+  errSync: "帳面に届かない。書き直しを続ける。変更はこの画面に残っている。",
+  errSyncLoad: "帳面を開けなかった。この端末の灯を出している。",
+  syncMoved: "この端末の灯を、帳面に移した。",
+  syncOn: "帳面を開いた。",
+  consentAria: "Cookie",
+  consentText: "灯は、分析や広告の Cookie を使いません。Cookie はサインインのための Clerk のものだけです。いつ置いてよいかを選んでください。",
+  consentMore: "プライバシーポリシー",
+  consentOk: "OK (いまサインインを読み込む)",
+  consentEssential: "サインインするときだけ",
+  navPrivacy: "プライバシー",
   projMenuAria: "プロジェクトを切り替える (P)",
   projNew: "+ 新しいプロジェクト",
   projSettings: "プロジェクトの設定…",
@@ -373,6 +393,8 @@ export function detectLang(): Lang {
   return (navigator.language || "en").toLowerCase().startsWith("ja") ? "ja" : "en";
 }
 export const getLang = () => lang;
+/** The text of a key in every language (to recognise a default value whatever language made it). */
+export const inAllLangs = (key: Key): string[] => Object.values(dict).map((d) => d[key]);
 
 export function t(key: Key, vars?: Record<string, string | number>): string {
   let s = dict[lang][key];

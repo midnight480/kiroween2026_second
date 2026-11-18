@@ -22,6 +22,7 @@
 | `manifest.webmanifest` | `public/` | 名前、アイコン、色、表示モード |
 | `sw.js` | `public/` | オフライン用のキャッシュ。ルートに置き、スコープを `/` にする |
 | アイコン | `public/icons/` | 192px、512px、maskable の 512px、`apple-touch-icon` の 180px。自作の SVG (闇に灯と「灯」の字) から書き出す。外部素材は使わない |
+| favicon (作成済み) | `public/` | `favicon.svg` (原本。闇に蝋燭と炎だけ。16〜32px では「灯」の字が潰れるので入れない)、`favicon.ico` (16/32/48px)、`apple-touch-icon.png` (180px)。3ページの `<head>` から参照する。PNG は macOS の `qlmanage` で SVG を書き出し、`sips` で縮めて作った |
 | 登録 | `src/main.ts` | `navigator.serviceWorker.register("/sw.js")`。開発中 (`import.meta.env.DEV`) は登録しない |
 | `<head>` | `index.html` | manifest、`theme-color`、`apple-touch-icon`、`viewport-fit=cover` |
 
@@ -161,3 +162,10 @@ PWA でも、アプリを閉じている間は JS が動きません。期限切
 - メニューを開いて Safe mode と Mute を切り替えられ、Esc と戻る操作で閉じる。
 - ホーム画面から開いて、オフラインでも起動し、タスクを追加できる。
 - 裏に回して戻したあと、音と期限の判定が再開する (`audio.md`)。
+
+## Cookie のバナー (`src/consent.ts`)
+
+- 画面の下に、和紙の色の帯で出す。本文 14px、ボタンは高さ 40px 以上。
+- 720px 未満では左右 8px まで広げ、2つのボタンを横幅いっぱいに並べる (狭ければ縦に折り返す)。
+- ゲート (z-index 2000) より上に出す。選ぶまで消えない。選び直しはプライバシーポリシーのページから。
+- 演出はない (動き、音、Safe mode の対象になる要素はない)。

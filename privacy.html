@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" href="/favicon.ico" sizes="48x48" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <meta name="color-scheme" content="dark light" />
+  <title>Privacy — Tomoshibi 灯</title>
+</head>
+<body>
+  <main class="doc">
+    <header class="pagebar">
+      <div class="brand"><b>灯</b> Tomoshibi</div>
+      <nav class="nav" data-i18n-aria="navAria">
+        <a href="./" data-i18n="navBoard"></a>
+        <a href="members.html" data-i18n="navTeam"></a>
+        <a href="help.html" data-i18n="navHelp"></a>
+      </nav>
+      <div id="auth" class="auth" hidden></div>
+      <div class="pickers">
+        <label><span data-i18n="theme"></span>
+          <select id="theme">
+            <option value="system" data-i18n="themeSystem"></option><option value="light" data-i18n="themeLight"></option><option value="dark" data-i18n="themeDark"></option>
+          </select>
+        </label>
+        <label><span data-i18n="lang"></span>
+          <select id="lang"><option value="en">English</option><option value="ja">日本語</option></select>
+        </label>
+      </div>
+    </header>
+
+    <h1><b>灯</b><span class="en">Privacy policy</span><span class="ja">プライバシーポリシー</span></h1>
+    <p class="en">How Tomoshibi (tomoshibi.midnight480.com) handles your information. Effective 18 November 2026.</p>
+    <p class="ja">灯 (tomoshibi.midnight480.com) が、利用者の情報をどう扱うかを定めます。2026年11月18日 制定。</p>
+
+    <h2><span class="en">What is kept, and where</span><span class="ja">保存する情報と場所</span></h2>
+    <h3 class="en">Without signing in</h3>
+    <h3 class="ja">サインインしない場合</h3>
+    <p class="en">Your tasks, projects, team list, counts and settings are saved only in this browser (localStorage). They are not sent to us.</p>
+    <p class="ja">課題、プロジェクト、名簿、数の記録、設定は、このブラウザの中 (localStorage) だけに保存します。運営者には送られません。</p>
+    <h3 class="en">Signed in</h3>
+    <h3 class="ja">サインインした場合</h3>
+    <ul class="en">
+      <li><b>Account:</b> Clerk keeps your account details (such as your email address, and your name and picture if your sign-in method provides them).</li>
+      <li><b>Tasks and projects:</b> their contents (title, deadline, notes, reference links, project fields and so on) are saved in our database with your Clerk user ID, so you see the same ledger on every device.</li>
+      <li>The team list, counts and settings stay in this browser.</li>
+    </ul>
+    <ul class="ja">
+      <li><b>アカウント:</b> Clerk が、アカウントの情報 (メールアドレス。サインインの方法によっては名前とプロフィール画像) を管理します。</li>
+      <li><b>課題とプロジェクト:</b> 中身 (件名、期限、メモ、参考資料のリンク、プロジェクトの項目の値など) を、Clerk のユーザー ID と一緒にデータベースに保存します。どの端末でも同じ帳面を見られるようにするためです。</li>
+      <li>名簿、数の記録、設定は、このブラウザに残ります。</li>
+    </ul>
+    <h3 class="en">Access records</h3>
+    <h3 class="ja">アクセスの記録</h3>
+    <p class="en">To deliver the site and investigate faults, Cloudflare records requests (such as IP address, time, URL and browser information), and our server writes error logs.</p>
+    <p class="ja">配信と不具合の調査のため、Cloudflare がリクエストの記録 (IP アドレス、日時、URL、ブラウザの情報など) を残し、サーバーがエラーの記録を残します。</p>
+
+    <h2><span class="en">Why</span><span class="ja">使う目的</span></h2>
+    <ul class="en">
+      <li>To provide the ledger: saving it and showing it on your devices.</li>
+      <li>To let you sign in.</li>
+      <li>To investigate faults and prevent abuse.</li>
+    </ul>
+    <ul class="ja">
+      <li>帳面を提供するため (保存と、端末をまたいだ表示)。</li>
+      <li>サインインのため。</li>
+      <li>不具合の調査と、不正な利用を防ぐため。</li>
+    </ul>
+    <p class="en">We do not use your information for advertising or analytics, and we do not sell it.</p>
+    <p class="ja">広告や分析には使いません。販売もしません。</p>
+
+    <h2><span class="en">Cookies and browser storage</span><span class="ja">Cookie とブラウザの保存領域</span></h2>
+    <p class="en">Tomoshibi itself sets no cookies. There are no analytics or advertising cookies. The only cookies are Clerk's, for sign-in:</p>
+    <p class="ja">灯そのものは Cookie を置きません。分析や広告の Cookie もありません。Cookie は、サインインのための Clerk のものだけです。</p>
+    <table>
+      <thead>
+        <tr class="en"><th>Name</th><th>Set on</th><th>Purpose</th></tr>
+        <tr class="ja"><th>名前</th><th>置く場所</th><th>目的</th></tr>
+      </thead>
+      <tbody>
+        <tr class="en"><td><code>__session</code>, <code>__client_uat</code>, <code>clerk_active_context</code></td><td>this site</td><td>Keep you signed in</td></tr>
+        <tr class="ja"><td><code>__session</code>、<code>__client_uat</code>、<code>clerk_active_context</code></td><td>このサイト</td><td>サインインの状態を保つ</td></tr>
+        <tr class="en"><td><code>__client</code></td><td>clerk.tomoshibi.midnight480.com</td><td>Clerk's sign-in session</td></tr>
+        <tr class="ja"><td><code>__client</code></td><td>clerk.tomoshibi.midnight480.com</td><td>Clerk のサインインのセッション</td></tr>
+      </tbody>
+    </table>
+    <p class="en">Clerk also keeps a few entries in browser storage (names starting with <code>__clerk</code>). Your browser may send cookies that other sites under midnight480.com set; Tomoshibi does not read them.</p>
+    <p class="ja">Clerk は、ブラウザの保存領域にもいくつか値を置きます (名前が <code>__clerk</code> で始まるもの)。midnight480.com の別のサイトが置いた Cookie を、ブラウザが送ってくることがありますが、灯はそれを読みません。</p>
+    <p class="en"><b>Your choice:</b> “OK” loads sign-in with every page, so it can show at once whether you are signed in. “Only when I sign in” sets no cookie until you press Sign in. Either way, the whole ledger works without signing in.</p>
+    <p class="ja"><b>選べること:</b> 「OK」を選ぶと、ページを開くたびにサインインの仕組みを読み込み、サインインしているかをすぐに表示します。「サインインするときだけ」を選ぶと、サインインのボタンを押すまで Cookie を置きません。どちらでも、サインインせずに全ての機能を使えます。</p>
+    <p><button type="button" id="consent-reset" class="ghost"><span class="en">Choose again</span><span class="ja">選び直す</span></button></p>
+    <p class="en">Tomoshibi's own entries in browser storage: <code>tomoshibi.tasks.v2</code>, <code>tomoshibi.projects</code>, <code>tomoshibi.project</code>, <code>tomoshibi.members</code>, <code>tomoshibi.me</code>, <code>tomoshibi.stats</code>, <code>tomoshibi.settings</code>, <code>tomoshibi.consent</code> (your cookie choice), <code>tomoshibi.signedIn</code>. They stay in this browser.</p>
+    <p class="ja">灯がブラウザの保存領域に置く値: <code>tomoshibi.tasks.v2</code>、<code>tomoshibi.projects</code>、<code>tomoshibi.project</code>、<code>tomoshibi.members</code>、<code>tomoshibi.me</code>、<code>tomoshibi.stats</code>、<code>tomoshibi.settings</code>、<code>tomoshibi.consent</code> (Cookie の選択)、<code>tomoshibi.signedIn</code>。どれもこのブラウザの中だけに残ります。</p>
+
+    <h2><span class="en">Services we use</span><span class="ja">利用している外部のサービス</span></h2>
+    <p class="en">We entrust information to these services to run Tomoshibi. Some are outside Japan.</p>
+    <p class="ja">灯を動かすため、次のサービスに情報の取り扱いを任せています。日本の外にあるものを含みます。</p>
+    <table>
+      <thead>
+        <tr class="en"><th>Service</th><th>Used for</th><th>Country</th></tr>
+        <tr class="ja"><th>サービス</th><th>用途</th><th>国</th></tr>
+      </thead>
+      <tbody>
+        <tr class="en"><td><a href="https://clerk.com/legal/privacy" rel="noopener noreferrer">Clerk</a></td><td>Sign-in and accounts</td><td>United States</td></tr>
+        <tr class="ja"><td><a href="https://clerk.com/legal/privacy" rel="noopener noreferrer">Clerk</a></td><td>サインインとアカウント</td><td>米国</td></tr>
+        <tr class="en"><td><a href="https://www.cloudflare.com/privacypolicy/" rel="noopener noreferrer">Cloudflare</a></td><td>Delivering the site, running the server, access records</td><td>United States (servers worldwide)</td></tr>
+        <tr class="ja"><td><a href="https://www.cloudflare.com/privacypolicy/" rel="noopener noreferrer">Cloudflare</a></td><td>配信、サーバーの実行、アクセスの記録</td><td>米国 (拠点は世界各地)</td></tr>
+        <tr class="en"><td><a href="https://neon.com/privacy-policy" rel="noopener noreferrer">Neon</a></td><td>The database for signed-in ledgers</td><td>United States (data stored in Singapore)</td></tr>
+        <tr class="ja"><td><a href="https://neon.com/privacy-policy" rel="noopener noreferrer">Neon</a></td><td>サインインした人の帳面のデータベース</td><td>米国 (データの保存先はシンガポール)</td></tr>
+      </tbody>
+    </table>
+    <p class="en">We do not give your information to anyone else, except where the law requires it.</p>
+    <p class="ja">法令に基づく場合を除き、これら以外に情報を渡しません。</p>
+
+    <h2><span class="en">How long, and how to delete</span><span class="ja">保存する期間と消し方</span></h2>
+    <ul class="en">
+      <li>Without signing in: clearing this site's data in your browser deletes everything.</li>
+      <li>Signed in: tasks and projects you delete in the app are deleted from the database too. To delete your account and everything left in the database, contact us (below).</li>
+      <li>Access records are kept for the period Cloudflare sets.</li>
+    </ul>
+    <ul class="ja">
+      <li>サインインしない場合: ブラウザでこのサイトのデータを消すと、全て消えます。</li>
+      <li>サインインした場合: アプリで消した課題とプロジェクトは、データベースからも消えます。アカウントと、データベースに残る全ての情報を消したいときは、下の連絡先にご連絡ください。</li>
+      <li>アクセスの記録は、Cloudflare が定める期間だけ残ります。</li>
+    </ul>
+
+    <h2><span class="en">Changes</span><span class="ja">変更</span></h2>
+    <p class="en">If this policy changes, the new version is posted on this page with its date.</p>
+    <p class="ja">このポリシーを変えるときは、日付とともにこのページに載せます。</p>
+
+    <h2><span class="en">Contact</span><span class="ja">連絡先</span></h2>
+    <p class="en">Please open an issue in the GitHub repository: <a href="https://github.com/midnight480/kiroween2026_second/issues" rel="noopener noreferrer">https://github.com/midnight480/kiroween2026_second/issues</a>. Do not write personal details (such as your email address) in the issue; we will tell you how to reach us privately.</p>
+    <p class="ja">GitHub のリポジトリの Issue でご連絡ください: <a href="https://github.com/midnight480/kiroween2026_second/issues" rel="noopener noreferrer">https://github.com/midnight480/kiroween2026_second/issues</a>。Issue は公開されるので、メールアドレスなどの個人の情報は書かないでください。個別のやりとりが必要なときは、その方法をお伝えします。</p>
+  </main>
+  <script type="module" src="/src/privacy.ts"></script>
+</body>
+</html>

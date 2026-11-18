@@ -25,6 +25,13 @@ export default defineConfig({
 			// npm run deploy:secrets で上げる。宣言しておくと、入っていないままのデプロイは失敗する。
 			// 手元の開発では .env.development.local の sk_test_ が使われる
 			CLERK_SECRET_KEY: bindings.secret(),
+			// Neon の接続情報 (.env.local と同じ値)。いまの Worker のコードは使わない (DB へは HYPERDRIVE 経由)。
+			// ダッシュボードで値の出どころが分かるよう、npm run secrets:build で .env.worker.production に写して上げる
+			DATABASE_URL: bindings.secret(),
+			DATABASE_URL_UNPOOLED: bindings.secret(),
+			NEON_BRANCH: bindings.secret(),
+			NEON_BRANCH_ID: bindings.secret(),
+			NEON_FUNCTION_HOST_SUFFIX: bindings.secret(),
 		},
 		// Neon (aws ap-southeast-1) の近くで Worker を動かす
 		placement: { region: "aws:ap-southeast-1" },
