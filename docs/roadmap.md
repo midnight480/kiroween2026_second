@@ -68,7 +68,7 @@
 
 手順は `deploy.md` にまとめた。
 
-- 配信は Cloudflare Workers の静的アセット。`npm run build` の `dist/` を配る。
+- 配信は Cloudflare Workers (`kiroween2026`)。画面は静的アセット、`/api/*` は Worker のコード。Hyperdrive 経由の Neon 接続は `/api/health` で確認済み。
 - 認証を入れる場合は、同じ Worker に API を置く。DB は Neon で、接続は Hyperdrive + node-postgres (Neon の推奨)。
 - 公開ドメインは `tomoshibi.midnight480.com` (Worker のカスタムドメインとして設定する)。
 - CLI は `cf` (devDependencies に導入済み、Wrangler は使わない)。設定は `cloudflare.config.ts`、手順は `deploy.md`。

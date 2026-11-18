@@ -23,12 +23,12 @@ Kiroween 2026 (https://kiroween.devpost.com/) の **Costume Contest** 部門向�
 
 ## 技術スタック
 
-- Vite 6 + TypeScript (strict)。フレームワークなし。
+- Vite 8 + TypeScript (strict)。フレームワークなし。Cloudflare の Vite プラグイン (2.0) で、画面と Worker を一緒にビルドする。
 - 描画は DOM + CSS + Canvas。
 - 音はすべて Web Audio で生成します。音声ファイルは使いません。ノードの組み合わせ方は `docs/audio.md`。
 - PWA としてホーム画面から使えるようにします。manifest と Service Worker は手書きで、依存パッケージは足しません (`docs/mobile.md`)。
 - レスポンシブ対応。720px 未満では設定類をハンバーガーメニュー (襖) に収めます (`docs/mobile.md`)。
-- 保存は `localStorage` のみ。バックエンドなし。
+- 保存は `localStorage` のみ。Worker の API は `/api/health` (Hyperdrive 経由で Neon に `SELECT 1`) だけで、タスクはまだサーバーに保存しない (`docs/deploy.md` の段階2)。
 - サインインは Clerk (`@clerk/clerk-js`)。任意で、ゲストのまま全機能が使えます。タスクの同期はまだありません (`docs/deploy.md` の段階2)。
 - **設定の値は環境変数で渡します。** 変数の一覧は `.env.example` (コミットする、値は空)。実際の値は git 管理外のファイルに置き、コードや設定ファイルに直接書きません。
   - `.env.development.local`: `npm run dev` のときだけ読まれる。Clerk の開発用キー (`npx -y clerk@latest env pull --instance dev --file .env.development.local`)。
@@ -43,14 +43,15 @@ Kiroween 2026 (https://kiroween.devpost.com/) の **Costume Contest** 部門向�
 
 ```bash
 npm install
-npm run dev      # http://localhost:5173/?debug でデバッグAPI有効
+npm run dev      # http://localhost:5173/?debug でデバッグAPI有効。/api/* の Worker も動く (.env.local に CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE が要る)
 npm run build    # tsc --noEmit && vite build。変更後は必ず通すこと
-npm run deploy:check  # ビルドして、デプロイの検査だけ行う (何も公開しない)
-npm run deploy        # ビルドして Cloudflare Workers へデプロイ
+npm run typecheck     # 画面の型チェック、Env の型の生成 (cf workers types)、Worker の型チェック
+npm run deploy:check  # 型チェックとビルドをして、デプロイの検査だけ行う (何も公開しない)
+npm run deploy        # 型チェックとビルドをして、Cloudflare Workers へデプロイ
 npm run cf:whoami     # cf のログイン状態を確認 (未ログインなら npx cf auth login)
 ```
 
-Cloudflare の操作は `cf` CLI (https://developers.cloudflare.com/cf/) で行います。Wrangler は使いません。設定は `cloudflare.config.ts` (Worker 名 `tomoshibi`、カスタムドメイン)。手順は `docs/deploy.md`。
+Cloudflare の操作は `cf` CLI (https://developers.cloudflare.com/cf/) で行います。Wrangler は使いません。設定は `cloudflare.config.ts` (Worker 名 `kiroween2026`、カスタムドメイン `tomoshibi.midnight480.com`、Hyperdrive)。ビルド出力は `.cloudflare/output/` (`dist/` は使わない)。手順は `docs/deploy.md`。
 
 デバッグ (`?debug` 付きURL、コンソール):
 - `__t.curse()` 期限切れの呪い演出を再生
@@ -76,7 +77,9 @@ src/audio.ts      Web Audio による効果音・環境音
 src/store.ts      Task型 (v2)、担当者、localStorage (v1 からの移行、壊れたデータの退避)、統計、残り時間の整形、蝋燭の見た目の割合
 src/i18n.ts       英語・日本語の辞書、期限の日時の整形 (和ホラーの語は入れない)
 src/style.css     全スタイル (ライトとダークは変数で切り替え)
-cloudflare.config.ts  Cloudflare Workers の設定 (cf CLI 用。Worker 名、カスタムドメイン)
+cloudflare.config.ts  Cloudflare Workers の設定 (cf CLI 用。Worker 名、カスタムドメイン、Hyperdrive、/api/* の振り分け)
+worker/index.ts   Worker のコード (/api/*)。いまは /api/health だけ
+worker/tsconfig.json Worker 側の型チェック (画面側の DOM の型と分ける)
 docs/             設計資料 (下記)
 ```
 
