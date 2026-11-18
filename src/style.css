@@ -483,3 +483,13 @@ body.safe .proj-menu { animation: none; }
   #top .nav { margin-left: 0; gap: 0; }
   #top .nav a { font-size: 12px; padding: 4px 5px; }
 }
+
+/* optional sign-in */
+.auth { display: flex; align-items: center; margin-left: auto; }
+.auth[hidden] { display: none; }
+.auth + .new-btn { margin-left: 12px; }
+.auth-btn { background: transparent; border: 1px solid var(--field-border); color: var(--text-dim); font: inherit; font-size: 13px; letter-spacing: .12em; padding: 6px 12px; cursor: pointer; }
+.auth-btn:hover { color: var(--text); border-color: var(--flame); }
+.auth-btn:focus-visible { outline: 2px solid var(--flame); outline-offset: 2px; }
+.auth-user { display: flex; align-items: center; min-width: 28px; min-height: 28px; }
+@media (max-width: 720px) { .auth-btn { font-size: 12px; letter-spacing: 0; padding: 5px 8px; } }

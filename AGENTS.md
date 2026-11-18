@@ -28,7 +28,8 @@ Kiroween 2026 (https://kiroween.devpost.com/) の **Costume Contest** 部門向�
 - 音はすべて Web Audio で生成します。音声ファイルは使いません。ノードの組み合わせ方は `docs/audio.md`。
 - PWA としてホーム画面から使えるようにします。manifest と Service Worker は手書きで、依存パッケージは足しません (`docs/mobile.md`)。
 - レスポンシブ対応。720px 未満では設定類をハンバーガーメニュー (襖) に収めます (`docs/mobile.md`)。
-- 保存は `localStorage` のみ。バックエンドなし。認証 (Clerk + Neon) を足すかは検討中 (`docs/roadmap.md`)。
+- 保存は `localStorage` のみ。バックエンドなし。
+- サインインは Clerk (`@clerk/clerk-js`、アプリ `app_3MHQJYEwGH5P8muc6SPYxlAdPXx`)。任意で、ゲストのまま全機能が使えます。キーは `.env.local` (git 管理外) の `VITE_CLERK_PUBLISHABLE_KEY` と `CLERK_SECRET_KEY`。秘密鍵は画面側のコードで使いません。タスクの同期はまだありません (`docs/deploy.md` の段階2)。
 - デプロイ先は Cloudflare Workers (静的アセット)。公開ドメインは `tomoshibi.midnight480.com` で、DNS も Cloudflare で管理しています。
 - 外部画像・外部素材は使いません。著作物 (貞子など特定作品の画像) は取り込みません。
 
@@ -60,6 +61,7 @@ src/dialog.ts     登録・編集モーダル (件名、期限、担当者、状
 src/projectDialog.ts プロジェクトの作成と設定 (項目の編集、削除)
 src/links.ts      参考資料のリンクの検査、サービスの見分け、アイコン
 src/members.ts    名簿の画面
+src/auth.ts       任意のサインイン (Clerk)。看板を先に出し、読み込めなければゲストのまま
 src/page.ts       名簿とヘルプで共通のテーマ・言語の初期化
 src/help.ts       ヘルプページ
 src/curse.ts      期限切れの呪いシーケンス (暗転→血→女→飛びかかり)

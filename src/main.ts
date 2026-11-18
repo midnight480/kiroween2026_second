@@ -11,6 +11,7 @@ import { t, setLang, applyI18n, detectLang, formatDue, type Lang, type Key } fro
 import { initDialog, openNew, openEdit, isOpen as isTaskDialogOpen, MAX_MS } from "./dialog";
 import { initProjectDialog, openNewProject, openProjectSettings, isProjectDialogOpen } from "./projectDialog";
 import { describe, icon } from "./links";
+import { initAuth, refreshAuthText } from "./auth";
 
 const isOpen = () => isTaskDialogOpen() || isProjectDialogOpen() || menuOpen();
 
@@ -100,6 +101,7 @@ function changeLang(l: Lang) {
   setLang(l);
   document.querySelectorAll<HTMLElement>(".gate-lang button").forEach((b) => b.classList.toggle("on", b.dataset.lang === l));
   if (undo) $("undo-text").textContent = t(undo.key);
+  refreshAuthText($("auth"));
   refresh();
   saveSettings();
 }
@@ -831,6 +833,8 @@ setCurrentProject(currentId);
 render();
 changeLang(langSel.value as Lang);
 if (loadInfo.recovered) notify("errBroken", 9000);
+// sign-in is optional and loads in the background; the board never waits for it
+void initAuth($("auth"));
 setInterval(() => { refresh(); void checkExpiry(); }, 1000);
 // a tab coming back from sleep checks the deadlines at once
 document.addEventListener("visibilitychange", () => { if (!document.hidden) { touchMe(); refresh(); void checkExpiry(); } });

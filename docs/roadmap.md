@@ -73,41 +73,16 @@
 - 公開ドメインは `tomoshibi.midnight480.com` (Worker のカスタムドメインとして設定する)。
 - CLI は `cf` (devDependencies に導入済み、Wrangler は使わない)。設定は `cloudflare.config.ts`、手順は `deploy.md`。
 
-## 検討中: 認証 (Clerk + Neon)
+## 認証 (Clerk。開発インスタンスで導入済み)
 
-いまは `localStorage` のみでバックエンドはありません (AGENTS.md)。認証を足すかを検討しています。決まるまで AGENTS.md の保存方針は変えません。
+- `@clerk/clerk-js` 6.x。`src/auth.ts` が、看板を描いた後に Clerk の UI を Clerk のドメインから読み込む。キーがない、読み込めない場合はボタンを隠し、ゲストのまま動く。
+- アプリは `Tomoshibi` (`app_3MHQJYEwGH5P8muc6SPYxlAdPXx`)。開発インスタンスのみ。本番インスタンスは未作成。
+- 注意: `npx clerk init` は Vite のプロジェクトで `src/main.ts` を丸ごと置き換える。再実行しない。キーの取り直しは `npx -y clerk@latest env pull`。
+- 未対応: タスクの同期、役割の権限、全員分の最後に見た時、サインインしたユーザーと名簿の「自分」の結びつけ、Clerk の画面の日本語化 (`@clerk/localizations` が要る)。
 
-### 前提にしたい点
-
-- **審査員がサインアップしなくても触れること。** ゲストは `localStorage` で全機能を使え、サインインすると端末間で同期する、という形を推奨します。審査員にアカウント作成を求めると、触ってもらえない可能性が上がります。
-- **サインイン画面も作品の一部にすること。** Clerk の既製UIのままだと、そこだけ普通のSaaSに見えます。appearance の調整か、独自のフォーム (`@clerk/clerk-js` のAPIで作る) で和紙と墨の見た目に合わせます。
-- フレームワークを使わない構成のため、`@clerk/clerk-js` を使います。Clerk の UI バンドルは Clerk のドメインから読み込まれます。
-
-### 構成
-
-| 役割 | 使うもの |
-|---|---|
-| 静的配信 | Workers (static assets) |
-| API | 同じ Worker |
-| DB | Neon。Hyperdrive + node-postgres で接続 (決定。D1 も候補だったが、Hyperdrive を試すためにあえてこの構成にする) |
-| 認証の検証 | `@clerk/backend` で JWT を検証。`authorizedParties` に `https://tomoshibi.midnight480.com` を指定する |
-
-### Hyperdrive での注意
-
-- Hyperdrive は読み取りクエリの結果を初期設定でキャッシュする。書き込みは素通しするが、キャッシュ済みの読み取り結果はすぐには消えない。タスクを追加した直後に一覧を読むと、古い一覧が返ることがある。
-- ToDo では書いた直後に読むのが普通なので、この Hyperdrive 設定ではキャッシュを無効にする。キャッシュの挙動を試したい場合は、読み取り専用の別設定を作って比べる。
-- ローカル開発 (`cf dev`) では Hyperdrive を通さず、ローカル用の接続文字列で DB に直接つなぐ。本番との差に注意する。
-
-### Cloudflare DNS での注意
-
-- Clerk の本番インスタンスは、自分のドメインに CNAME レコードを追加する必要がある。Cloudflare でプロキシ (オレンジ雲) をオンにすると Clerk の DNS 検証が通らないので、Clerk 用のレコードは「DNS only」にする。
-- ドメインに CAA レコードがある場合、Let's Encrypt と Google Trust Services が証明書を発行できるようにしておく。
-
-### 追加になるもの
-
-- 依存パッケージ: `@clerk/clerk-js`、`@clerk/backend`、`pg` (`cf` は導入済み)。AGENTS.md の作業ルールにより、追加前にユーザーの確認が必要。
-- `Task` の保存先の切り替え (ゲストは `localStorage`、サインイン時は API)、初回サインイン時の `localStorage` からの移行。
-- 秘密情報 (Clerk の Secret Key、DB 接続文字列) は `cf workers secrets` と Hyperdrive の設定に置き、リポジトリに入れない。
+### 本番に出す前に
+- `npm run build` は `.env.local` の開発用キー (`pk_test_`) を埋め込む。いまの設定でデプロイすると、公開版が開発インスタンスにつながる (利用の上限が厳しい)。本番インスタンスを作るまでは、`VITE_CLERK_PUBLISHABLE_KEY= npm run deploy` のようにキーを空にしてデプロイするか、本番用のキーに替える。
+- 本番インスタンス: `npx -y clerk@latest deploy --mode agent --domain midnight480.com` (または `tomoshibi.midnight480.com`)。出てくる DNS レコードは Cloudflare で「DNS only」にする。`authorizedParties` は API を作るときに `https://tomoshibi.midnight480.com` を指定する。
 
 ## API (予定)
 
