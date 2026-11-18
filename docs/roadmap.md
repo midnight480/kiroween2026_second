@@ -64,16 +64,14 @@
 
 ## デプロイ (決定: Cloudflare)
 
-手順は `deploy.md` にまとめた。
-
-手順は `deploy.md` にまとめた。
-
 ドメインを Cloudflare で管理しているため、デプロイ先は Cloudflare にします。
+
+手順は `deploy.md` にまとめた。
 
 - 配信は Cloudflare Workers の静的アセット。`npm run build` の `dist/` を配る。
 - 認証を入れる場合は、同じ Worker に API を置く。DB は Neon で、接続は Hyperdrive + node-postgres (Neon の推奨)。
 - 公開ドメインは `tomoshibi.midnight480.com` (Worker のカスタムドメインとして設定する)。
-- CLI は `wrangler` (devDependencies に導入済み)。設定は `wrangler.jsonc`、手順は AGENTS.md のコマンド欄。
+- CLI は `cf` (devDependencies に導入済み、Wrangler は使わない)。設定は `cloudflare.config.ts`、手順は `deploy.md`。
 
 ## 検討中: 認証 (Clerk + Neon)
 
@@ -98,7 +96,7 @@
 
 - Hyperdrive は読み取りクエリの結果を初期設定でキャッシュする。書き込みは素通しするが、キャッシュ済みの読み取り結果はすぐには消えない。タスクを追加した直後に一覧を読むと、古い一覧が返ることがある。
 - ToDo では書いた直後に読むのが普通なので、この Hyperdrive 設定ではキャッシュを無効にする。キャッシュの挙動を試したい場合は、読み取り専用の別設定を作って比べる。
-- ローカル開発 (`wrangler dev`) では Hyperdrive を通さず、ローカル用の接続文字列で DB に直接つなぐ。本番との差に注意する。
+- ローカル開発 (`cf dev`) では Hyperdrive を通さず、ローカル用の接続文字列で DB に直接つなぐ。本番との差に注意する。
 
 ### Cloudflare DNS での注意
 
@@ -107,9 +105,9 @@
 
 ### 追加になるもの
 
-- 依存パッケージ: `@clerk/clerk-js`、`@clerk/backend`、`pg` (`wrangler` は導入済み)。AGENTS.md の作業ルールにより、追加前にユーザーの確認が必要。
+- 依存パッケージ: `@clerk/clerk-js`、`@clerk/backend`、`pg` (`cf` は導入済み)。AGENTS.md の作業ルールにより、追加前にユーザーの確認が必要。
 - `Task` の保存先の切り替え (ゲストは `localStorage`、サインイン時は API)、初回サインイン時の `localStorage` からの移行。
-- 秘密情報 (Clerk の Secret Key、DB 接続文字列) は `wrangler secret` と Hyperdrive の設定に置き、リポジトリに入れない。
+- 秘密情報 (Clerk の Secret Key、DB 接続文字列) は `cf workers secrets` と Hyperdrive の設定に置き、リポジトリに入れない。
 
 ## API (予定)
 

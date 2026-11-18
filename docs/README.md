@@ -17,5 +17,4 @@
 | `audio.md` | 音の役割、Web Audio API のノードの組み合わせ方、モバイルでの注意 |
 | `mobile.md` | PWA、画面幅の区分、ハンバーガーメニュー、タッチ操作 |
 | `deploy.md` | Cloudflare Workers、Hyperdrive、Neon へのデプロイ手順 |
-| `deploy.md` | Cloudflare Workers、Hyperdrive、Neon へのデプロイ手順 |
 | `roadmap.md` | 未確認事項、未決定事項、次の候補 |

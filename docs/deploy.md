@@ -8,16 +8,18 @@
 | 2 | API と DB。Worker に `/api/*` を足し、Hyperdrive 経由で Neon につなぐ | API キー、サインイン、端末間の同期を作るとき |
 | 3 | 認証 (Clerk) | 段階2と一緒か、その後 (`roadmap.md` の「検討中: 認証」) |
 
+Cloudflare の操作には `cf` CLI を使います (https://developers.cloudflare.com/cf/)。Wrangler は使いません。`cf` は 2026-11-18 時点で 1.0 のリリース候補 (`1.0.0-rc.1`) です。設定の形式とデプロイのコマンドは安定版扱いですが、あまり使われない API コマンドは 1.0 までに変わることがあります。
+
 確認した資料 (2026-11-18 時点):
+- cf CLI: https://developers.cloudflare.com/cf/ (Wrangler との関係は https://developers.cloudflare.com/cf/wrangler/)
 - Workers の静的アセット: https://developers.cloudflare.com/workers/static-assets/binding/
 - HTML の扱い (末尾スラッシュ): https://developers.cloudflare.com/workers/static-assets/routing/advanced/html-handling/
 - カスタムドメイン: https://developers.cloudflare.com/workers/configuration/routing/custom-domains/
 - Hyperdrive の始め方: https://developers.cloudflare.com/hyperdrive/get-started/
-- Hyperdrive の Wrangler コマンド: https://developers.cloudflare.com/hyperdrive/reference/wrangler-commands/
 - Hyperdrive のキャッシュ: https://developers.cloudflare.com/hyperdrive/concepts/query-caching/
 - Neon と Hyperdrive: https://neon.com/docs/guides/cloudflare-hyperdrive
 
-コマンドや設定項目は変わることがあります。実行する前に、プロジェクトに入れた Wrangler の `--help` と、`node_modules/wrangler/config-schema.json` で確かめてください。
+コマンドは変わることがあります。`--help` を順にたどるより、`npx cf cli search "<やりたいこと>"` で探し、見つけたコマンドの `--help` を見てください。
 
 ---
 
@@ -26,68 +28,70 @@
 | 項目 | 確認すること |
 |---|---|
 | Cloudflare アカウント | `midnight480.com` のゾーンがこのアカウントにあり、有効 (Active) であること |
-| DNS | `tomoshibi.midnight480.com` に、既存の CNAME レコードがないこと。CNAME があるホスト名にはカスタムドメインを作れない |
-| Wrangler の認証 | 手元では `npx wrangler login` (ブラウザで許可)。CI で使う場合は、アカウントの API トークンを作り、権限を、デプロイ、カスタムドメイン、Hyperdrive に要るものだけに絞る (必要な権限は https://developers.cloudflare.com/workers/authorization/ で確かめる)。トークンの値はチャットやリポジトリに貼らない |
+| DNS | `tomoshibi.midnight480.com` に、既存の CNAME レコードがないこと。CNAME があるホスト名にはカスタムドメインを作れない (`npx cf dns records list --zone midnight480.com` で確かめる) |
+| cf の認証 | 手元では `npx cf auth login` (ブラウザで許可)。`cf` は Wrangler のログインを使い回さない。CI では `CLOUDFLARE_API_TOKEN` と `CLOUDFLARE_ACCOUNT_ID` を設定し、トークンの権限は、デプロイ、カスタムドメイン、Hyperdrive に要るものだけに絞る。トークンの値はチャットやリポジトリに貼らない |
 | Neon アカウント | 段階2から必要 |
-| 依存パッケージ | 段階1で `wrangler`、段階2で `pg` と `@types/pg` を足す。AGENTS.md の作業ルールに従い、足す前にユーザーの確認を取る |
+| 依存パッケージ | `cf` は導入済み。段階2で `pg` と `@types/pg` を足す。AGENTS.md の作業ルールに従い、足す前にユーザーの確認を取る |
 
 ---
 
 ## 段階1: 静的配信
 
-### 1-1. Wrangler を入れる (要確認)
+### 1-1. cf (導入済み)
 
 ```bash
-npm install -D wrangler
-npx wrangler --version
-npx wrangler whoami   # どのアカウントで動くかを確かめる
+npm install -D cf    # 導入済み。package.json に入っている
+npx cf --version
+npx cf auth login    # 初回だけ
+npx cf auth whoami   # どのアカウントで動くかを確かめる (npm run cf:whoami でも同じ)
 ```
 
-### 1-2. `wrangler.jsonc` を作る
+### 1-2. `cloudflare.config.ts` (作成済み)
 
-リポジトリ直下に置きます。Worker のコードはまだないので、`main` は書きません。
+リポジトリ直下に置いています。Worker のコードはまだないので、Worker 名とカスタムドメインだけを書きます。
 
-```jsonc
-{
-  "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "tomoshibi",
-  // 作った日の日付にする。2026-08-04 以降なら Node.js 互換が既定でオン (段階2で使う)
-  "compatibility_date": "2026-11-18",
-  "assets": {
-    "directory": "./dist",
-    // 既定値。/members.html は /members へ 307 で転送され、/members で members.html が返る
-    "html_handling": "auto-trailing-slash"
+```ts
+import { defineConfig } from "cf/config";
+
+export default defineConfig({
+  worker: {
+    name: "tomoshibi",
+    compatibilityDate: "2026-11-01",
+    observability: { enabled: true },
+    domains: ["tomoshibi.midnight480.com"],
   },
-  "routes": [
-    { "pattern": "tomoshibi.midnight480.com", "custom_domain": true }
-  ]
-}
+});
 ```
 
+- 配る中身は、`cf deploy ./dist` のようにディレクトリを渡して決める。この形は「サーバー側のコードがないプロジェクト」用で、静的アセットだけの Worker になる。
 - カスタムドメインにすると、DNS レコードと証明書は Cloudflare が作ります。手で DNS を足す必要はありません。
-- 看板の中のリンクは `members.html` と `help.html` を指しています。`auto-trailing-slash` では `/members` に転送されてから表示されるので、このままで動きます。
+- HTML の扱いは既定の `auto-trailing-slash` です。`/members.html` は `/members` へ 307 で転送され、`/members` で `members.html` が返ります。看板の中のリンクは `members.html` と `help.html` を指していますが、転送されてから表示されるので、このままで動きます。
+- `wrangler.jsonc` や `wrangler.toml` をリポジトリに置かないでください。それらがあるプロジェクトで `cf dev`、`cf build`、`cf deploy` を実行してはいけないと、`cf` のドキュメントに書かれています。
 
-### 1-3. スクリプトと除外ファイル
+### 1-3. スクリプトと除外ファイル (設定済み)
 
-`package.json` の `scripts` に足します。
+`package.json` の `scripts`:
 
 ```json
-"deploy": "npm run build && wrangler deploy",
-"deploy:check": "npm run build && wrangler deploy --dry-run"
+"deploy:check": "npm run build && cf deploy ./dist --dry-run",
+"deploy": "npm run build && cf deploy ./dist",
+"cf:whoami": "cf auth whoami"
 ```
 
-`.gitignore` に足します。
+`.gitignore`:
 
 ```
-.wrangler
+.cloudflare
 .dev.vars*
 .env*
 ```
 
+`.cloudflare/` には、`cf` が作るビルド出力 (`.cloudflare/output`) と手元の状態が入ります。
+
 ### 1-4. 確かめてからデプロイ
 
 ```bash
-npm run deploy:check   # ビルドと、アップロードする中身の確認だけ。何も公開しない
+npm run deploy:check   # ビルドと、アップロードする中身の確認だけ。何も公開しない (認証も不要)
 npm run deploy         # 公開
 ```
 
@@ -99,16 +103,22 @@ npm run deploy         # 公開
 - [ ] スマートフォンで開ける
 - [ ] `localStorage` はオリジンごとなので、`localhost` で作ったタスクは公開版には出ない (正常な動き)
 
-### 1-6. 戻し方
+### 1-6. 戻し方とログ
 
 ```bash
-npx wrangler deployments list
-npx wrangler rollback            # 一つ前の版に戻す
+npx cf workers deployments list --help      # 引数を確かめてから使う
+npx cf workers deployments create --help    # 前の版を指定してデプロイし直す
+npx cf observability tail --help            # 本番のログを流す (--worker で Worker を指定)
 ```
 
 ---
 
 ## 段階2: API と DB (Neon + Hyperdrive)
+
+> **注意: 段階2は Wrangler 前提で書いた下書きです。** 着手するときに `cf` 用に書き直します。
+> - 設定は `wrangler.jsonc` ではなく `cloudflare.config.ts` に書く。Hyperdrive のバインディング、`run_worker_first`、`placement` の書き方は `cf` のドキュメントで確かめる。
+> - Worker のコードを足すと `cf deploy ./dist` は使えない。`cf init .` などで Cloudflare の Vite プラグイン (`@cloudflare/vite-plugin`、要確認) を入れ、`cf deploy` でビルドとデプロイを行う形になる見込み。
+> - コマンドの読み替え: `wrangler hyperdrive create` → `cf hyperdrive create`、`wrangler secret put` → `cf workers secrets update`、`wrangler types` → `cf workers types`、`wrangler dev` → `cf dev`、`wrangler tail` → `cf observability tail`、`wrangler rollback` → `cf workers deployments` 系。
 
 ### 2-1. Neon を用意する
 
@@ -237,6 +247,6 @@ npx wrangler tail          # 本番のログを見る
 | 項目 | 推奨 |
 |---|---|
 | 段階1をいま行うか | 行う。審査用の URL を早めに用意できる |
-| Wrangler を devDependency に足すか | 足す (`npx` で毎回取りに行くより、版が固定される) |
+| CLI | `cf` を devDependency に入れた (`npx` で毎回取りに行くより、版が固定される)。Wrangler は使わない |
 | Neon のリージョン | AWS Tokyo (`aws-ap-northeast-1`)。審査員は海外だが、API は段階2からなので、利用者の中心で選ぶ |
 | デプロイを CI (GitHub Actions など) で行うか | 段階1は手元から。段階2で CI を足すなら、権限を絞った API トークンを使う |

@@ -68,7 +68,7 @@ Vite のビルドはファイル名にハッシュが付くため、手書きの
 
 - `sw.js` と `manifest.webmanifest` は長くキャッシュさせない。`public/_headers` で `Cache-Control: no-cache` を付ける。`/assets/*` は `max-age=31536000, immutable`。
 - HTTPS 必須 (Workers は標準で HTTPS)。`localhost` は開発でも SW が動く。
-- `wrangler.jsonc` の静的アセットで、存在しないパスを `index.html` に返す設定にするかは、神隠しの404ページ (`roadmap.md`) と合わせて決める。
+- 静的アセットの設定で、存在しないパスを `index.html` に返す設定にするかは、神隠しの404ページ (`roadmap.md`) と合わせて決める。
 
 ### インストールの案内
 
