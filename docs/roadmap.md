@@ -77,11 +77,12 @@
 
 - `@clerk/clerk-js` 6.x。`src/auth.ts` が、看板を描いた後に Clerk の UI を Clerk のドメインから読み込む。キーがない、読み込めない場合はボタンを隠し、ゲストのまま動く。
 - アプリは `Tomoshibi` (`app_3MHQJYEwGH5P8muc6SPYxlAdPXx`)。開発インスタンスのみ。本番インスタンスは未作成。
-- 注意: `npx clerk init` は Vite のプロジェクトで `src/main.ts` を丸ごと置き換える。再実行しない。キーの取り直しは `npx -y clerk@latest env pull`。
+- 注意: `npx clerk init` は Vite のプロジェクトで `src/main.ts` を丸ごと置き換える。再実行しない。開発用のキーの取り直しは `npx -y clerk@latest env pull --instance dev --file .env.development.local`。
 - 未対応: タスクの同期、役割の権限、全員分の最後に見た時、サインインしたユーザーと名簿の「自分」の結びつけ、Clerk の画面の日本語化 (`@clerk/localizations` が要る)。
 
 ### 本番に出す前に
-- `npm run build` は `.env.local` の開発用キー (`pk_test_`) を埋め込む。いまの設定でデプロイすると、公開版が開発インスタンスにつながる (利用の上限が厳しい)。本番インスタンスを作るまでは、`VITE_CLERK_PUBLISHABLE_KEY= npm run deploy` のようにキーを空にしてデプロイするか、本番用のキーに替える。
+- キーは mode ごとのファイルで分ける (`.env.example`)。開発用は `.env.development.local`、本番用は `.env.production.local`。本番インスタンスを作るまでは `.env.production.local` を置かないので、公開版はサインインなしのゲスト版になる。本番のビルドに `pk_test_` が入った場合も、`src/auth.ts` がサインインを止める (手元で試すときだけ `VITE_CLERK_ALLOW_DEV_KEY=1`)。
+- 本番用のキーは `npx -y clerk@latest env pull --instance prod --print` で表示し、自分の端末で `.env.production.local` に貼る (プレーンな `env pull` は開発用のキーを上書きするので使わない)。
 - 本番インスタンス: `npx -y clerk@latest deploy --mode agent --domain midnight480.com` (または `tomoshibi.midnight480.com`)。出てくる DNS レコードは Cloudflare で「DNS only」にする。`authorizedParties` は API を作るときに `https://tomoshibi.midnight480.com` を指定する。
 
 ## API (予定)

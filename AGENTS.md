@@ -29,7 +29,13 @@ Kiroween 2026 (https://kiroween.devpost.com/) の **Costume Contest** 部門向�
 - PWA としてホーム画面から使えるようにします。manifest と Service Worker は手書きで、依存パッケージは足しません (`docs/mobile.md`)。
 - レスポンシブ対応。720px 未満では設定類をハンバーガーメニュー (襖) に収めます (`docs/mobile.md`)。
 - 保存は `localStorage` のみ。バックエンドなし。
-- サインインは Clerk (`@clerk/clerk-js`、アプリ `app_3MHQJYEwGH5P8muc6SPYxlAdPXx`)。任意で、ゲストのまま全機能が使えます。キーは `.env.local` (git 管理外) の `VITE_CLERK_PUBLISHABLE_KEY` と `CLERK_SECRET_KEY`。秘密鍵は画面側のコードで使いません。タスクの同期はまだありません (`docs/deploy.md` の段階2)。
+- サインインは Clerk (`@clerk/clerk-js`)。任意で、ゲストのまま全機能が使えます。タスクの同期はまだありません (`docs/deploy.md` の段階2)。
+- **設定の値は環境変数で渡します。** 変数の一覧は `.env.example` (コミットする、値は空)。実際の値は git 管理外のファイルに置き、コードや設定ファイルに直接書きません。
+  - `.env.development.local`: `npm run dev` のときだけ読まれる。Clerk の開発用キー (`npx -y clerk@latest env pull --instance dev --file .env.development.local`)。
+  - `.env.production.local`: `npm run build` / `deploy` のとき。Clerk の本番用キー。ない場合はサインインなしで公開される。
+  - `.env.local`: 全ての mode。Neon の接続情報 (neon CLI が書く)。
+  - 画面側に渡るのは `VITE_` で始まる変数だけです。`CLERK_SECRET_KEY` と `DATABASE_URL` は画面側のコードで使いません。Worker では `cf workers secrets update` で入れます。
+  - 本番のビルドに開発用のキー (`pk_test_`) が入っても、`src/auth.ts` がサインインを止めます。
 - デプロイ先は Cloudflare Workers (静的アセット)。公開ドメインは `tomoshibi.midnight480.com` で、DNS も Cloudflare で管理しています。
 - 外部画像・外部素材は使いません。著作物 (貞子など特定作品の画像) は取り込みません。
 

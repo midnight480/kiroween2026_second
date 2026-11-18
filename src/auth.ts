@@ -76,6 +76,13 @@ function render(root: HTMLElement) {
 export async function initAuth(root: HTMLElement): Promise<void> {
   const key = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
   if (!key) { root.hidden = true; return; }
+  // A production build must not talk to the development instance (strict limits). Keys come from
+  // .env.development.local / .env.production.local (see .env.example).
+  if (import.meta.env.PROD && key.startsWith("pk_test_") && !import.meta.env.VITE_CLERK_ALLOW_DEV_KEY) {
+    console.warn("[tomoshibi] development Clerk key in a production build: sign-in is turned off.");
+    root.hidden = true;
+    return;
+  }
   try {
     // the Frontend API domain is encoded in the publishable key
     const domain = atob(key.split("_")[2] ?? "").replace(/\$$/, "");

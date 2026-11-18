@@ -234,7 +234,7 @@ npx wrangler tail          # 本番のログを見る
 
 ## 段階3: 認証 (Clerk)
 
-開発インスタンスでの組み込みは済んでいる (`roadmap.md` の「認証」)。段階1でデプロイするときは、開発用キーを埋め込まないよう注意する。
+開発インスタンスでの組み込みは済んでいる (`roadmap.md` の「認証」)。キーは mode ごとの環境変数のファイルで分けている (`.env.example`)。`npm run deploy` は本番の mode でビルドするので、`.env.development.local` の開発用キーは入らない。本番用のキーは `.env.production.local` に置く。
 
 段階2の後で入れます。DNS で気をつける点は `roadmap.md` の「検討中: 認証」にあります。
 
