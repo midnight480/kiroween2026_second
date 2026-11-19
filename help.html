@@ -12,11 +12,12 @@
 <body>
   <main class="doc">
     <header class="pagebar">
-      <div class="brand"><b>灯</b> Tomoshibi</div>
+      <a class="brand" href="./" data-i18n-title="brandTitle"><b>灯</b> Tomoshibi</a>
       <nav class="nav" data-i18n-aria="navAria">
         <a href="./" data-i18n="navBoard"></a>
         <a href="members.html" data-i18n="navTeam"></a>
         <a href="help.html" aria-current="page" data-i18n="navHelp"></a>
+        <a href="api.html" data-i18n="navApi"></a>
       </nav>
       <div id="auth" class="auth" hidden></div>
       <div class="pickers">
@@ -135,19 +136,25 @@
 
     <h2><span class="en">The team</span><span class="ja">名簿</span></h2>
     <ul class="en">
-      <li>The <b>Team</b> page lists everyone who can be assigned a candle: name, role, how many candles they carry, and when they were last seen.</li>
-      <li>Press <b>This is me</b> on your own row. From then on, this device records when you were last seen.</li>
+      <li>Each project has its own roster. The <b>Team</b> page shows the roster of one project (pick it at the top): name, role, how many of that project's candles they carry, and when they were last seen.</li>
+      <li>A task can only be given to someone on its project's roster. Moving a task to another project keeps the assignee only if they are on that roster too.</li>
+      <li>Press <b>This is me</b> on your own row (once per project). From then on, this device records when you were last seen.</li>
       <li>Last seen is only known for the person marked as you on each device, until sign-in is added.</li>
       <li>Roles (Owner, Admin, Member, Viewer) are recorded now. They will limit what each person can do once sign-in is added.</li>
       <li>Removing someone keeps their candles. They are left with nobody assigned.</li>
     </ul>
     <ul class="ja">
-      <li><b>名簿</b>には、灯を任せられる人が並びます。名前、役割、担当している灯の数、最後に見た時です。</li>
-      <li>自分の行で<b>これが自分</b>を押します。以後、この端末で最後に見た時を記録します。</li>
+      <li>名簿はプロジェクトごとにあります。<b>名簿</b>のページは、上で選んだプロジェクトの名簿です。名前、役割、そのプロジェクトで担当している灯の数、最後に見た時が並びます。</li>
+      <li>タスクを任せられるのは、そのタスクのプロジェクトの名簿にいる人だけです。タスクをほかのプロジェクトへ移すと、移した先の名簿にいる場合だけ担当者が残ります。</li>
+      <li>自分の行で<b>これが自分</b>を押します (プロジェクトごとに1回)。以後、この端末で最後に見た時を記録します。</li>
       <li>サインインを入れるまでは、各端末で「自分」の印を付けた人の時刻だけが分かります。</li>
       <li>役割 (オーナー、管理者、メンバー、閲覧者) はいまは記録だけです。サインインを入れたら、できることを役割で制限します。</li>
       <li>名簿から外しても、その人の灯は残ります。担当者なしになります。</li>
     </ul>
+
+    <h2><span class="en">API</span><span class="ja">API</span></h2>
+    <p class="en">Signed in, you can light and read candles from scripts and other tools. Keys are issued in your account (avatar → <b>Manage account</b> → <b>API keys</b>). How to use them is on the <a href="api.html">API docs</a> page.</p>
+    <p class="ja">サインインすると、スクリプトやほかのツールから灯を登録・取得できます。キーはアカウントの画面で発行します (アバター → <b>アカウントを管理</b> → <b>API キー</b>)。使い方は <a href="api.html">API ドキュメント</a>のページにあります。</p>
 
     <h2><span class="en">The candle and the clock</span><span class="ja">蝋燭と時計</span></h2>
     <p class="en">Sometimes a candle looks shorter than it should. The time written on the card is always the true time left. Trust the writing.</p>

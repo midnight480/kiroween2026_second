@@ -64,6 +64,44 @@ function loadUiBundle(domain: string, ms = 8000): Promise<void> {
   });
 }
 
+/** A small open book, drawn for this app (no logo). */
+const BOOK = `<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M2 3.5h4.5A1.5 1.5 0 0 1 8 5v8a1.5 1.5 0 0 0-1.5-1.5H2zM14 3.5H9.5A1.5 1.5 0 0 0 8 5v8a1.5 1.5 0 0 1 1.5-1.5H14z"/></svg>`;
+const icon = (el: HTMLDivElement) => { el.innerHTML = BOOK; };
+const clear = (el?: HTMLDivElement) => { if (el) el.innerHTML = ""; };
+
+/**
+ * API keys are issued in the account window (Clerk's own "API keys" page, switched on in the Clerk
+ * dashboard). Next to it we add a page that says what the key is for and links to api.html, and a
+ * menu item that goes straight to the docs.
+ */
+function accountExtras() {
+  return {
+    customMenuItems: [{ label: t("apiDocsMenu"), href: "/api.html", mountIcon: icon, unmountIcon: clear }],
+    userProfileProps: {
+      customPages: [{
+        label: t("apiDocsMenu"),
+        url: "api-docs",
+        mountIcon: icon,
+        unmountIcon: clear,
+        mount: (el: HTMLDivElement) => {
+          const h = document.createElement("h2");
+          h.textContent = t("apiDocsTitle");
+          h.style.cssText = "font-size:17px;font-weight:600;margin:0 0 12px";
+          const p = document.createElement("p");
+          p.textContent = t("apiDocsBody");
+          p.style.cssText = "margin:0 0 16px;line-height:1.7";
+          const a = document.createElement("a");
+          a.href = "/api.html";
+          a.textContent = t("apiDocsLink");
+          a.style.cssText = "color:#8e1010;font-weight:600";
+          el.replaceChildren(h, p, a);
+        },
+        unmount: clear,
+      }],
+    },
+  };
+}
+
 function render(root: HTMLElement) {
   root.innerHTML = "";
   if (!clerk) return;
@@ -71,7 +109,7 @@ function render(root: HTMLElement) {
     const slot = document.createElement("div");
     slot.className = "auth-user";
     root.appendChild(slot);
-    clerk.mountUserButton(slot, { appearance: appearance() });
+    clerk.mountUserButton(slot, { appearance: appearance(), ...accountExtras() });
   } else {
     const btn = document.createElement("button");
     btn.type = "button";

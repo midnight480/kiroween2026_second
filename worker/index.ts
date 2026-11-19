@@ -3,12 +3,14 @@
 //   GET  /api/health  DB に SELECT 1 (サインイン不要)
 //   GET  /api/data    サインインした人の課題とプロジェクト
 //   POST /api/sync    変わった課題とプロジェクトだけを書き込む / 消す
+//   /api/v1/*         API キーで使う公開 API (worker/v1.ts)
 //
 // 課題とプロジェクトは、ブラウザが持つ JSON (src/store.ts の Task, Project) をそのまま data に入れる。
 // 中身の検査と補正はブラウザ側の normalize が行う。ここでは大きさと形だけを確かめ、
 // 必ず本人 (Clerk のセッショントークンの sub) の行だけを読み書きする。
 import { verifyToken } from "@clerk/backend";
 import { Client } from "pg";
+import { v1 } from "./v1";
 
 const json = (body: unknown, status = 200) =>
   Response.json(body, { status, headers: { "Cache-Control": "no-store" } });
@@ -156,6 +158,9 @@ export default {
       if (pathname === "/api/health") {
         if (method !== "GET" && method !== "HEAD") return json({ error: "method not allowed" }, 405);
         return await health(env, ctx);
+      }
+      if (pathname === "/api/v1" || pathname.startsWith("/api/v1/")) {
+        return await v1(request, env, (fn) => withDb(env, ctx, fn));
       }
       if (pathname === "/api/data" || pathname === "/api/sync") {
         const uid = await userId(request, env);

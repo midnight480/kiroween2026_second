@@ -2,9 +2,12 @@ import "./style.css";
 import { t, applyI18n, formatAgo, formatDue, getLang, type Key } from "./i18n";
 import { initPage } from "./page";
 import {
-  load, loadMembers, saveMembers, newMember, getMe, setMe, touchMe, isOverdue, setSaveFailHandler,
-  ROLES, MEMBERS_STORAGE_KEY, type Member, type Role, type Task,
+  load, save, loadProjects, saveProjects, ensureProjects, getCurrentProject, setCurrentProject, projectName,
+  newMember, getMe, setMe, touchMe, isOverdue, setSaveFailHandler,
+  ROLES, MAX_MEMBERS, PROJECTS_STORAGE_KEY, type Member, type Project, type Role, type Task,
 } from "./store";
+import { authUser, onAuthChange, sessionToken } from "./auth";
+import * as ledger from "./sync";
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const ROLE_KEY: Record<Role, Key> = { owner: "roleOwner", admin: "roleAdmin", member: "roleMember", viewer: "roleViewer" };
@@ -12,8 +15,14 @@ const ROLE_DESC: Record<Role, Key> = { owner: "roleOwnerDesc", admin: "roleAdmin
 /** Not seen for this long, the row fades: someone who has drifted away from the house. */
 const GONE_MS = 7 * 86_400_000;
 
-let members: Member[] = loadMembers();
+// Each project has its own roster (Project.members). Signed in, projects come from the server
+// (src/sync.ts) exactly as on the board; as a guest, from localStorage.
 let tasks: Task[] = load();
+let projects: Project[] = loadProjects();
+let currentId = "";
+const cur = (): Project => projects.find((p) => p.id === currentId) ?? projects[0];
+const roster = (): Member[] => cur()?.members ?? [];
+const projSel = $<HTMLSelectElement>("m-project");
 const body = $("team-body");
 const errBox = $("m-err");
 const saltWrap = document.querySelector<HTMLElement>("#member-form .salt-wrap")!;
@@ -31,13 +40,38 @@ function showError(key: Key) {
 function clearError() { errBox.hidden = true; saltWrap.classList.remove("fall"); }
 setSaveFailHandler(() => { errBox.textContent = t("errSave"); errBox.hidden = false; });
 
-/** Write our change on top of the freshest list, so another tab's edits are not lost. */
+/** Put a set of tasks and projects on the page (load, sign in or out, another tab or device). */
+function useData(next: { tasks: Task[]; projects: Project[] }) {
+  tasks = next.tasks;
+  projects = next.projects;
+  if (ensureProjects(projects, tasks, t("projFirst"))) { saveProjects(projects); save(tasks); }
+  if (!projects.some((p) => p.id === currentId)) {
+    currentId = projects.some((p) => p.id === getCurrentProject()) ? getCurrentProject()! : projects[0].id;
+  }
+  renderProjects();
+  render();
+}
+
+/** As a guest, re-read the stored projects first, so another tab's edits are not lost. */
+function fresh() {
+  if (ledger.active()) return;
+  projects = loadProjects();
+  ensureProjects(projects, tasks, t("projFirst"));
+}
+
+/** Change one member of the open project and save the project. */
 function update(id: string, fn: (m: Member) => void) {
-  members = loadMembers();
-  const m = members.find((x) => x.id === id);
+  fresh();
+  const m = roster().find((x) => x.id === id);
   if (!m) return;
   fn(m);
-  saveMembers(members);
+  saveProjects(projects);
+}
+
+function renderProjects() {
+  projSel.innerHTML = projects.map((p) => `<option value="${esc(p.id)}">${esc(projectName(p))}</option>`).join("");
+  projSel.value = cur()?.id ?? "";
+  $("m-project-wrap").hidden = projects.length < 2;
 }
 
 function roleOptions(selected: Role) {
@@ -45,7 +79,7 @@ function roleOptions(selected: Role) {
 }
 
 function loadText(m: Member, now: number) {
-  const mine = tasks.filter((x) => x.assignee === m.id && x.status !== "done");
+  const mine = tasks.filter((x) => x.projectId === currentId && x.assignee === m.id && x.status !== "done");
   if (!mine.length) return t("loadNone");
   const late = mine.filter((x) => isOverdue(x, now)).length;
   return late ? `${t("loadOpen", { n: mine.length })} · <span class="late">${esc(t("loadOverdue", { n: late }))}</span>` : esc(t("loadOpen", { n: mine.length }));
@@ -62,7 +96,8 @@ const order = (a: Member, b: Member) => ROLES.indexOf(a.role) - ROLES.indexOf(b.
 
 function render() {
   const now = Date.now();
-  const me = getMe();
+  const me = getMe(cur());
+  const members = roster();
   body.innerHTML = "";
   for (const m of [...members].sort(order)) {
     const tr = document.createElement("tr");
@@ -91,17 +126,17 @@ function wireRow(tr: HTMLElement, id: string) {
   const nm = tr.querySelector<HTMLInputElement>(".nm")!;
   const commitName = () => {
     const v = nm.value.trim();
-    const cur = members.find((x) => x.id === id);
-    if (!cur) return;
-    if (!v) { nm.value = cur.name; return showError("errMember"); }
-    if (members.some((x) => x.id !== id && x.name === v)) { nm.value = cur.name; return showError("errMemberDup"); }
+    const mem = roster().find((x) => x.id === id);
+    if (!mem) return;
+    if (!v) { nm.value = mem.name; return showError("errMember"); }
+    if (roster().some((x) => x.id !== id && x.name === v)) { nm.value = mem.name; return showError("errMemberDup"); }
     clearError();
-    if (v !== cur.name) { update(id, (m) => { m.name = v; }); render(); }
+    if (v !== mem.name) { update(id, (m) => { m.name = v; }); render(); }
   };
   nm.addEventListener("change", commitName);
   nm.addEventListener("keydown", (e) => {
     if (e.key === "Enter") { e.preventDefault(); nm.blur(); }
-    else if (e.key === "Escape") { nm.value = members.find((x) => x.id === id)?.name ?? nm.value; nm.blur(); }
+    else if (e.key === "Escape") { nm.value = roster().find((x) => x.id === id)?.name ?? nm.value; nm.blur(); }
   });
   tr.querySelector<HTMLSelectElement>(".rl")!.addEventListener("change", (e) => {
     const role = (e.target as HTMLSelectElement).value as Role;
@@ -110,16 +145,18 @@ function wireRow(tr: HTMLElement, id: string) {
     body.querySelector<HTMLSelectElement>(`tr[data-id="${id}"] .rl`)?.focus();
   });
   tr.querySelector(".me-btn")?.addEventListener("click", () => {
-    setMe(id);
-    touchMe(true);
-    members = loadMembers();
+    fresh();
+    setMe(cur().id, id);
+    if (touchMe(cur(), true)) saveProjects(projects);
     render();
   });
   wireHold(tr.querySelector<HTMLElement>(".rm")!, 900, () => {
-    const name = members.find((x) => x.id === id)?.name ?? "";
-    members = loadMembers().filter((x) => x.id !== id);
-    saveMembers(members);
-    if (getMe() === id) setMe(null);
+    fresh();
+    const p = cur();
+    const name = p.members.find((x) => x.id === id)?.name ?? "";
+    if (getMe(p) === id) setMe(p.id, null);
+    p.members = p.members.filter((x) => x.id !== id);
+    saveProjects(projects);
     // their candles stay on the board; the board shows them with nobody assigned
     render();
     announce(t("memberRemoved", { name }));
@@ -153,11 +190,13 @@ $("member-form").addEventListener("submit", (e) => {
   const input = $<HTMLInputElement>("m-name");
   const name = input.value.trim();
   if (!name) return showError("errMember");
-  members = loadMembers();
-  if (members.some((x) => x.name === name)) return showError("errMemberDup");
+  fresh();
+  const p = cur();
+  if (p.members.some((x) => x.name === name)) return showError("errMemberDup");
+  if (p.members.length >= MAX_MEMBERS) return showError("errMemberFull");
   clearError();
-  members.push(newMember(name, $<HTMLSelectElement>("m-role").value as Role));
-  saveMembers(members);
+  p.members.push(newMember(name, $<HTMLSelectElement>("m-role").value as Role));
+  saveProjects(projects);
   input.value = "";
   render();
   input.focus();
@@ -167,24 +206,72 @@ initPage(() => {
   applyI18n();
   document.title = getLang() === "ja" ? "名簿 — 灯 Tomoshibi" : "Team — Tomoshibi 灯";
   renderRoles();
+  renderProjects();
   render();
 });
-// write back once, so members saved before roles existed keep a stable role and created time
-saveMembers(loadMembers());
-touchMe();
-members = loadMembers();
-render();
+projSel.addEventListener("change", () => {
+  currentId = projSel.value;
+  setCurrentProject(currentId); // the board opens the same project next time
+  clearError();
+  seen();
+  render();
+  announce(t("liveProject", { name: projectName(cur()) }));
+});
+
+/** Record that "me" is here in the open project (at most once a minute). */
+function seen(force = false) {
+  if (touchMe(cur(), force)) { saveProjects(projects); render(); }
+}
+
+/* ---------- signed in: the same ledger on the server as the board ---------- */
+let ledgerUser: string | null = null;
+async function followAuth() {
+  const user = authUser()?.id ?? null;
+  if (user === ledgerUser) return;
+  ledgerUser = user;
+  if (ledger.active()) await ledger.stop();
+  if (!user) { useData({ tasks: load(), projects: loadProjects() }); return; }
+  try {
+    const got = await ledger.connect(sessionToken, { tasks, projects }, () => { errBox.textContent = t("errSync"); errBox.hidden = false; }, () => ledgerUser === user);
+    if (!got) return;
+    useData(got.data);
+    // first sign-in: this device's guest ledger moves up, the same as from the board
+    if (got.first) { save(tasks); saveProjects(projects); }
+    seen();
+  } catch (e) {
+    console.warn("[tomoshibi] could not load the ledger:", e);
+    ledgerUser = null;
+    errBox.textContent = t("errSyncLoad");
+    errBox.hidden = false;
+  }
+}
+onAuthChange(() => { void followAuth(); });
+async function pull() {
+  if (!ledger.active() || ledger.pending() || document.activeElement?.closest("#team-body, #member-form")) return;
+  try {
+    const server = await ledger.fetchData(sessionToken);
+    if (!ledger.active() || ledger.pending() || !ledger.differs(server)) return;
+    ledger.start(sessionToken, server, () => { errBox.textContent = t("errSync"); errBox.hidden = false; });
+    useData(server);
+  } catch { /* offline: keep what is shown */ }
+}
+document.addEventListener("visibilitychange", () => { if (!document.hidden) { seen(); void pull(); } });
+
+useData({ tasks, projects });
+seen(true);
 
 // the clock moves on; so do the other tabs
 setInterval(() => {
   const now = Date.now();
   for (const tr of body.querySelectorAll<HTMLElement>("tr")) {
-    const m = members.find((x) => x.id === tr.dataset.id);
+    const m = roster().find((x) => x.id === tr.dataset.id);
     if (m) tr.querySelector(".seen")!.innerHTML = seenCell(m, now);
   }
 }, 30_000);
 addEventListener("storage", (e) => {
-  if (e.key === MEMBERS_STORAGE_KEY || e.key === "tomoshibi.me") { members = loadMembers(); render(); }
+  if (ledger.active()) { if (e.key === "tomoshibi.me.v2") render(); return; }
+  if (e.key === PROJECTS_STORAGE_KEY) { fresh(); renderProjects(); render(); }
+  else if (e.key === "tomoshibi.me.v2") render();
   else if (e.key === "tomoshibi.tasks.v2") { tasks = load(); render(); }
 });
 addEventListener("keydown", (e) => {

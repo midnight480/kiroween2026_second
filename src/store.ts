@@ -4,7 +4,6 @@ import { cleanUrl } from "./links";
 /** Where the task is in the work. Overdue is not a status: it is derived from `due` (see `isOverdue`). */
 export type Status = "todo" | "doing" | "done";
 export const STATUSES: Status[] = ["todo", "doing", "done"];
-export const MEMBERS_STORAGE_KEY = "tomoshibi.members";
 
 /* ---------- projects ---------- */
 export type FieldType = "text" | "number" | "select" | "date" | "checkbox" | "url";
@@ -27,7 +26,12 @@ export interface Project {
   name: string;
   created: number;
   fields: FieldDef[];
+  /** The project's own roster. Tasks of this project are assigned to these members only. */
+  members: Member[];
 }
+
+/** People per project. Keeps one project row well under the server's size limit. */
+export const MAX_MEMBERS = 100;
 
 export interface Link {
   id: string;
@@ -47,7 +51,7 @@ export interface Task {
   links?: Link[];
   /** Free text, 0..500 characters. */
   note?: string;
-  /** Id of a `Member`. Later this becomes an account id. */
+  /** Id of a `Member` in the task's own project. */
   assignee?: string;
   created: number;
   /** The real deadline (ms). Only the user changes this. */
@@ -96,7 +100,8 @@ export interface Stats {
 const KEY = "tomoshibi.tasks.v2";
 const KEY_V1 = "tomoshibi.tasks.v1"; // kept after migration, so nothing is lost
 const STATS_KEY = "tomoshibi.stats";
-const MEMBERS_KEY = "tomoshibi.members";
+/** The roster before it moved into each project. Read once to fill old projects, never written again. */
+const LEGACY_MEMBERS_KEY = "tomoshibi.members";
 
 /** Set when the saved data could not be read. The original text is kept under `tomoshibi.tasks.broken.<time>`. */
 export const loadInfo = { recovered: false };
@@ -209,18 +214,26 @@ export function saveStats(s: Stats): void {
   try { localStorage.setItem(STATS_KEY, JSON.stringify(s)); } catch { onSaveFail?.(); }
 }
 
-export function loadMembers(): Member[] {
+export function normalizeMembers(v: unknown[]): Member[] {
+  const now = Date.now();
+  return v.filter((m): m is Record<string, unknown> => !!m && typeof m === "object"
+    && typeof (m as Member).id === "string" && typeof (m as Member).name === "string").map((m) => ({
+    id: m.id as string,
+    name: m.name as string,
+    role: ROLES.includes(m.role as Role) ? m.role as Role : "member",
+    created: isNum(m.created) ? m.created : now,
+    lastSeen: isNum(m.lastSeen) ? m.lastSeen : undefined,
+  })).slice(0, MAX_MEMBERS);
+}
+
+/**
+ * The single roster every project shared before rosters moved into projects. A project saved
+ * without `members` starts from a copy of it, with the same ids, so its tasks keep their assignees.
+ */
+function legacyMembers(): Member[] {
   try {
-    const v = JSON.parse(localStorage.getItem(MEMBERS_KEY) ?? "[]");
-    if (!Array.isArray(v)) return [];
-    const now = Date.now();
-    return v.filter((m) => m && typeof m.id === "string" && typeof m.name === "string").map((m) => ({
-      id: m.id,
-      name: m.name,
-      role: ROLES.includes(m.role) ? m.role : "member",
-      created: isNum(m.created) ? m.created : now,
-      lastSeen: isNum(m.lastSeen) ? m.lastSeen : undefined,
-    }));
+    const v = JSON.parse(localStorage.getItem(LEGACY_MEMBERS_KEY) ?? "[]");
+    return Array.isArray(v) ? normalizeMembers(v) : [];
   } catch {
     return [];
   }
@@ -230,34 +243,42 @@ export function newMember(name: string, role: Role = "member"): Member {
   return { id: crypto.randomUUID(), name, role, created: Date.now() };
 }
 
-/* ---------- "me": which member uses this device ---------- */
-const ME_KEY = "tomoshibi.me";
-export function getMe(): string | null {
-  try { return localStorage.getItem(ME_KEY); } catch { return null; }
+/* ---------- "me": which member uses this device, per project ---------- */
+const ME_KEY = "tomoshibi.me.v2";       // { [projectId]: memberId }
+const LEGACY_ME_KEY = "tomoshibi.me";   // one member id, from the shared roster
+function readMe(): Record<string, string> {
+  try {
+    const v = JSON.parse(localStorage.getItem(ME_KEY) ?? "{}");
+    return v && typeof v === "object" && !Array.isArray(v) ? v as Record<string, string> : {};
+  } catch {
+    return {};
+  }
 }
-export function setMe(id: string | null): void {
-  try { if (id) localStorage.setItem(ME_KEY, id); else localStorage.removeItem(ME_KEY); } catch { onSaveFail?.(); }
+/** The member this device marked as "me" in the project, if any. */
+export function getMe(project: Project | undefined): string | null {
+  if (!project) return null;
+  const id = readMe()[project.id] ?? (() => { try { return localStorage.getItem(LEGACY_ME_KEY); } catch { return null; } })();
+  return id && project.members.some((m) => m.id === id) ? id : null;
+}
+export function setMe(projectId: string, id: string | null): void {
+  const me = readMe();
+  if (id) me[projectId] = id; else me[projectId] = ""; // "" = nobody, and the old shared mark no longer applies
+  try { localStorage.setItem(ME_KEY, JSON.stringify(me)); } catch { onSaveFail?.(); }
 }
 
 const SEEN_EVERY = 60_000;
 /**
- * Record that "me" is here. Written at most once a minute. Reads the stored list fresh,
- * so it never overwrites changes made in another tab.
+ * Record that "me" is here, in the given project. At most once a minute.
+ * Returns true when the project changed and should be saved.
  */
-export function touchMe(force = false): void {
-  const me = getMe();
-  if (!me) return;
-  const list = loadMembers();
-  const m = list.find((x) => x.id === me);
-  if (!m) return;
+export function touchMe(project: Project | undefined, force = false): boolean {
+  const me = getMe(project);
+  const m = me ? project!.members.find((x) => x.id === me) : undefined;
+  if (!m) return false;
   const now = Date.now();
-  if (!force && m.lastSeen && now - m.lastSeen < SEEN_EVERY) return;
+  if (!force && m.lastSeen && now - m.lastSeen < SEEN_EVERY) return false;
   m.lastSeen = now;
-  saveMembers(list);
-}
-
-export function saveMembers(m: Member[]): void {
-  try { localStorage.setItem(MEMBERS_KEY, JSON.stringify(m)); } catch { onSaveFail?.(); }
+  return true;
 }
 
 const PROJECTS_KEY = "tomoshibi.projects";
@@ -289,6 +310,8 @@ export function normalizeProjects(v: unknown[]): Project[] {
     fields: Array.isArray(p.fields)
       ? (p.fields as unknown[]).map((f) => (f && typeof f === "object" ? normalizeField(f as Record<string, unknown>) : null)).filter((f): f is FieldDef => !!f)
       : [],
+    // saved before rosters moved into projects: start from the old shared roster
+    members: Array.isArray(p.members) ? normalizeMembers(p.members as unknown[]) : legacyMembers(),
   }));
 }
 
@@ -306,7 +329,7 @@ export function projectName(p: Project): string {
 }
 
 export function newProject(name: string): Project {
-  return { id: crypto.randomUUID(), name, created: Date.now(), fields: [] };
+  return { id: crypto.randomUUID(), name, created: Date.now(), fields: [], members: [] };
 }
 
 export function getCurrentProject(): string | null {
@@ -322,7 +345,13 @@ export function setCurrentProject(id: string): void {
  */
 export function ensureProjects(projects: Project[], tasks: Task[], firstName: string): boolean {
   let changed = false;
-  if (!projects.length) { projects.push(newProject(firstName)); changed = true; }
+  if (!projects.length) {
+    // the very first project inherits the old shared roster, if this device had one
+    const p = newProject(firstName);
+    p.members = legacyMembers();
+    projects.push(p);
+    changed = true;
+  }
   const ids = new Set(projects.map((p) => p.id));
   for (const task of tasks) {
     if (!ids.has(task.projectId)) { task.projectId = projects[0].id; changed = true; }

@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" href="/favicon.ico" sizes="48x48" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <meta name="color-scheme" content="dark light" />
+  <title>API — Tomoshibi 灯</title>
+</head>
+<body>
+  <main class="doc">
+    <header class="pagebar">
+      <a class="brand" href="./" data-i18n-title="brandTitle"><b>灯</b> Tomoshibi</a>
+      <nav class="nav" data-i18n-aria="navAria">
+        <a href="./" data-i18n="navBoard"></a>
+        <a href="members.html" data-i18n="navTeam"></a>
+        <a href="help.html" data-i18n="navHelp"></a>
+        <a href="api.html" aria-current="page" data-i18n="navApi"></a>
+      </nav>
+      <div id="auth" class="auth" hidden></div>
+      <div class="pickers">
+        <label><span data-i18n="theme"></span>
+          <select id="theme">
+            <option value="system" data-i18n="themeSystem"></option><option value="light" data-i18n="themeLight"></option><option value="dark" data-i18n="themeDark"></option>
+          </select>
+        </label>
+        <label><span data-i18n="lang"></span>
+          <select id="lang"><option value="en">English</option><option value="ja">日本語</option></select>
+        </label>
+      </div>
+    </header>
+
+    <h1><b>灯</b><span class="en">The ledger API</span><span class="ja">帳面の API</span></h1>
+    <p class="en">Light and read candles from scripts, CI, chat bots or anything that can send HTTP. The API works on the ledger of a signed-in account: the same tasks you see on the board after signing in.</p>
+    <p class="ja">スクリプト、CI、チャットボットなど、HTTP を送れるものから灯を登録・取得できます。API が扱うのは、サインインしたアカウントの帳面です。サインイン後に看板で見えるタスクと同じものです。</p>
+
+    <nav class="toc" aria-label="Contents">
+      <a href="#key"><span class="en">Get a key</span><span class="ja">キーを発行する</span></a>
+      <a href="#auth-h"><span class="en">Sending the key</span><span class="ja">キーの送り方</span></a>
+      <a href="#endpoints"><span class="en">Endpoints</span><span class="ja">エンドポイント</span></a>
+      <a href="#examples"><span class="en">Examples</span><span class="ja">例</span></a>
+      <a href="#task"><span class="en">The task object</span><span class="ja">タスクの形</span></a>
+      <a href="#errors"><span class="en">Errors and limits</span><span class="ja">エラーと上限</span></a>
+    </nav>
+
+    <h2 id="key"><span class="en">Get a key</span><span class="ja">キーを発行する</span></h2>
+    <ol class="en">
+      <li>Sign in (top right of any page).</li>
+      <li>Open your account: press your avatar, then <b>Manage account</b>.</li>
+      <li>Open <b>API keys</b>, press <b>Add new key</b>, and give it a name (for example <i>ci-bot</i>).</li>
+      <li>Copy the key right away. It is shown only once. Keep it like a password: never put it in a public repository or in web page code.</li>
+    </ol>
+    <ol class="ja">
+      <li>サインインします (どのページでも右上)。</li>
+      <li>アバターを押し、<b>アカウントを管理</b>を開きます。</li>
+      <li><b>API キー</b>を開いて<b>新しいキーを追加</b>を押し、名前を付けます (例: <i>ci-bot</i>)。</li>
+      <li>キーはその場でコピーしてください。表示されるのは1度だけです。パスワードと同じように扱い、公開リポジトリや Web ページのコードには入れないでください。</li>
+    </ol>
+    <p class="en">A key can be revoked on the same page at any time. A revoked key stops working within a minute.</p>
+    <p class="ja">キーは同じページでいつでも取り消せます。取り消したキーは、1分以内に使えなくなります。</p>
+
+    <h2 id="auth-h"><span class="en">Sending the key</span><span class="ja">キーの送り方</span></h2>
+    <p class="en">Send the key in the <code>Authorization</code> header of every request. Bodies are JSON.</p>
+    <p class="ja">すべてのリクエストで、キーを <code>Authorization</code> ヘッダーに入れて送ります。本文は JSON です。</p>
+    <pre data-origin><code>Authorization: Bearer &lt;your key&gt;
+Content-Type: application/json
+
+Base URL: https://tomoshibi.midnight480.com/api/v1</code></pre>
+
+    <h2 id="endpoints"><span class="en">Endpoints</span><span class="ja">エンドポイント</span></h2>
+    <table>
+      <thead>
+        <tr class="en"><th>Method and path</th><th>What it does</th></tr>
+        <tr class="ja"><th>メソッドとパス</th><th>動き</th></tr>
+      </thead>
+      <tbody>
+        <tr class="en"><td><code>GET /projects</code></td><td>Your projects, each with its roster (member ids for <code>assignee</code>).</td></tr>
+        <tr class="ja"><td><code>GET /projects</code></td><td>プロジェクトの一覧。それぞれの名簿 (<code>assignee</code> に使うメンバーの id) 付き。</td></tr>
+        <tr class="en"><td><code>GET /tasks</code></td><td>Your tasks, nearest deadline first. Filter with <code>?project=&lt;id&gt;</code> and <code>?status=todo|doing|done</code>.</td></tr>
+        <tr class="ja"><td><code>GET /tasks</code></td><td>タスクの一覧。期限の近い順。<code>?project=&lt;id&gt;</code> と <code>?status=todo|doing|done</code> で絞り込めます。</td></tr>
+        <tr class="en"><td><code>POST /tasks</code></td><td>Light a new candle. Returns <code>201</code> and the task.</td></tr>
+        <tr class="ja"><td><code>POST /tasks</code></td><td>新しい灯をともす (タスクを登録する)。<code>201</code> とタスクが返ります。</td></tr>
+        <tr class="en"><td><code>PATCH /tasks/{id}</code></td><td>Change a task: title, deadline, note, assignee, status. Send only what changes.</td></tr>
+        <tr class="ja"><td><code>PATCH /tasks/{id}</code></td><td>タスクを変更する: 件名、期限、メモ、担当者、状態。変える項目だけを送ります。</td></tr>
+      </tbody>
+    </table>
+
+    <h3 class="en">Fields for POST and PATCH</h3>
+    <h3 class="ja">POST と PATCH の項目</h3>
+    <table>
+      <thead>
+        <tr class="en"><th>Field</th><th>Type</th><th>Rules</th></tr>
+        <tr class="ja"><th>項目</th><th>型</th><th>決まり</th></tr>
+      </thead>
+      <tbody>
+        <tr class="en"><td><code>title</code></td><td>string</td><td>Required for POST. 1 to 80 characters.</td></tr>
+        <tr class="ja"><td><code>title</code></td><td>文字列</td><td>POST では必須。1〜80文字。</td></tr>
+        <tr class="en"><td><code>due</code></td><td>string</td><td>The deadline, ISO 8601 <b>with a time zone</b> (<code>2026-11-20T18:00:00+09:00</code>). At least a minute from now, within a year.</td></tr>
+        <tr class="ja"><td><code>due</code></td><td>文字列</td><td>期限。<b>タイムゾーン付き</b>の ISO 8601 (<code>2026-11-20T18:00:00+09:00</code>)。1分以上先、1年以内。</td></tr>
+        <tr class="en"><td><code>minutes</code></td><td>integer</td><td>Instead of <code>due</code>: the deadline is this many minutes from now. POST needs <code>due</code> or <code>minutes</code>.</td></tr>
+        <tr class="ja"><td><code>minutes</code></td><td>整数</td><td><code>due</code> の代わりに、いまから何分後を期限にするか。POST では <code>due</code> か <code>minutes</code> のどちらかが必須。</td></tr>
+        <tr class="en"><td><code>project</code></td><td>string</td><td>POST only. A project id. Without it, the task goes into your first project.</td></tr>
+        <tr class="ja"><td><code>project</code></td><td>文字列</td><td>POST だけ。プロジェクトの id。省くと最初のプロジェクトに入ります。</td></tr>
+        <tr class="en"><td><code>note</code></td><td>string | null</td><td>Up to 500 characters. <code>null</code> clears it.</td></tr>
+        <tr class="ja"><td><code>note</code></td><td>文字列 | null</td><td>500文字まで。<code>null</code> で消します。</td></tr>
+        <tr class="en"><td><code>assignee</code></td><td>string | null</td><td>A member id from the <b>same project's</b> roster (<code>GET /projects</code>). <code>null</code> leaves it to nobody.</td></tr>
+        <tr class="ja"><td><code>assignee</code></td><td>文字列 | null</td><td><b>同じプロジェクトの</b>名簿にいるメンバーの id (<code>GET /projects</code>)。<code>null</code> で担当者なし。</td></tr>
+        <tr class="en"><td><code>status</code></td><td>string</td><td><code>todo</code> or <code>doing</code> (POST, default <code>todo</code>). PATCH also takes <code>done</code>: finished after the deadline is recorded as late.</td></tr>
+        <tr class="ja"><td><code>status</code></td><td>文字列</td><td><code>todo</code> か <code>doing</code> (POST、既定は <code>todo</code>)。PATCH では <code>done</code> も使えます。期限後に完了すると「遅れて完了」として記録されます。</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="examples"><span class="en">Examples</span><span class="ja">例</span></h2>
+    <p class="en">Put your key in an environment variable first, so it does not end up in your shell history.</p>
+    <p class="ja">キーは先に環境変数に入れておきます。シェルの履歴にキーを残さないためです。</p>
+    <pre data-origin><code>export TOMOSHIBI_KEY="..."   # paste the key here
+API=https://tomoshibi.midnight480.com/api/v1
+
+# projects and their rosters
+curl -s "$API/projects" -H "Authorization: Bearer $TOMOSHIBI_KEY"
+
+# light a candle that burns for two hours
+curl -s -X POST "$API/tasks" \
+  -H "Authorization: Bearer $TOMOSHIBI_KEY" -H "Content-Type: application/json" \
+  -d '{"title": "Review the release notes", "minutes": 120}'
+
+# a fixed deadline, in a given project, for a given member
+curl -s -X POST "$API/tasks" \
+  -H "Authorization: Bearer $TOMOSHIBI_KEY" -H "Content-Type: application/json" \
+  -d '{"title": "Send the invoice", "due": "2026-11-20T18:00:00+09:00",
+       "project": "PROJECT_ID", "assignee": "MEMBER_ID", "note": "PDF from the shared drive"}'
+
+# open candles in one project
+curl -s "$API/tasks?project=PROJECT_ID&amp;status=todo" -H "Authorization: Bearer $TOMOSHIBI_KEY"
+
+# put it out (finish)
+curl -s -X PATCH "$API/tasks/TASK_ID" \
+  -H "Authorization: Bearer $TOMOSHIBI_KEY" -H "Content-Type: application/json" \
+  -d '{"status": "done"}'</code></pre>
+
+    <h2 id="task"><span class="en">The task object</span><span class="ja">タスクの形</span></h2>
+    <pre><code>{
+  "task": {
+    "id": "5b0c…",
+    "project": "a1f2…",
+    "title": "Review the release notes",
+    "note": null,
+    "assignee": null,
+    "status": "todo",
+    "due": "2026-11-19T11:00:00.000Z",
+    "created": "2026-11-19T09:00:12.345Z",
+    "doneAt": null,
+    "late": false,
+    "overdue": false,
+    "extended": 0
+  }
+}</code></pre>
+    <ul class="en">
+      <li>Times come back in UTC (<code>Z</code>). <code>overdue</code> is true while the task is open and past its deadline.</li>
+      <li><code>late</code> is true for a task finished after its deadline. <code>extended</code> counts how many times the deadline was moved later.</li>
+      <li>A candle lit through the API appears on an open board within a minute, and at once on the next visit.</li>
+    </ul>
+    <ul class="ja">
+      <li>時刻は UTC (<code>Z</code>) で返ります。<code>overdue</code> は、未完了で期限を過ぎているとき true です。</li>
+      <li><code>late</code> は期限後に完了したとき true です。<code>extended</code> は期限を後ろへ延ばした回数です。</li>
+      <li>API でともした灯は、開いている看板には1分以内に、次に開いたときはすぐに出ます。</li>
+    </ul>
+
+    <h2 id="errors"><span class="en">Errors and limits</span><span class="ja">エラーと上限</span></h2>
+    <p class="en">Errors come back as <code>{"error": "…"}</code> with the reason in plain words.</p>
+    <p class="ja">エラーは <code>{"error": "…"}</code> の形で、理由を英文で返します。</p>
+    <table>
+      <thead>
+        <tr class="en"><th>Status</th><th>Meaning</th></tr>
+        <tr class="ja"><th>ステータス</th><th>意味</th></tr>
+      </thead>
+      <tbody>
+        <tr class="en"><td><code>400</code></td><td>Something in the body is missing or not allowed (the message says which).</td></tr>
+        <tr class="ja"><td><code>400</code></td><td>本文の項目が足りないか、決まりに合わない (どれかはメッセージに出ます)。</td></tr>
+        <tr class="en"><td><code>401</code></td><td>No key, or the key is unknown, revoked or expired.</td></tr>
+        <tr class="ja"><td><code>401</code></td><td>キーがない。または、知らないキー、取り消したキー、期限切れのキー。</td></tr>
+        <tr class="en"><td><code>404</code></td><td>No such task or project in your ledger.</td></tr>
+        <tr class="ja"><td><code>404</code></td><td>あなたの帳面に、そのタスクかプロジェクトがない。</td></tr>
+        <tr class="en"><td><code>409</code></td><td>The project already holds 60 open candles, or you have no project yet (sign in on the board once).</td></tr>
+        <tr class="ja"><td><code>409</code></td><td>そのプロジェクトの未完了がすでに60件ある。または、まだプロジェクトがない (一度サインインして看板を開いてください)。</td></tr>
+        <tr class="en"><td><code>413</code></td><td>The body is larger than 16 KB.</td></tr>
+        <tr class="ja"><td><code>413</code></td><td>本文が 16 KB を超えている。</td></tr>
+        <tr class="en"><td><code>429</code></td><td>More than 60 requests in a minute with one key. Wait the seconds in <code>Retry-After</code>.</td></tr>
+        <tr class="ja"><td><code>429</code></td><td>1つのキーで1分に60回を超えた。<code>Retry-After</code> の秒数だけ待ってください。</td></tr>
+      </tbody>
+    </table>
+    <ul class="en">
+      <li>The API can only reach your own ledger. Guests (not signed in) keep their candles in the browser, where the API cannot see them.</li>
+      <li>Burning (deleting) a task is not available through the API on purpose. Do it on the board.</li>
+      <li>Calls from a web page on another site are not allowed (no CORS). Call the API from a server or a script.</li>
+    </ul>
+    <ul class="ja">
+      <li>API が触れるのは、自分の帳面だけです。サインインしていない場合、灯はブラウザの中にあり、API からは見えません。</li>
+      <li>タスクを燃やす (削除する) 操作は、あえて API に入れていません。看板で行ってください。</li>
+      <li>ほかのサイトの Web ページからは呼べません (CORS なし)。サーバーやスクリプトから呼んでください。</li>
+    </ul>
+    <p class="doc-foot"><a href="privacy.html" data-i18n="navPrivacy"></a></p>
+  </main>
+  <script type="module" src="/src/api.ts"></script>
+</body>
+</html>

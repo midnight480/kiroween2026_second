@@ -5,7 +5,7 @@
 ## 決定事項
 
 - 看板は1プロジェクトずつ表示する。ヘッダーのメニューで切り替える。
-- 名簿 (`team.md`) は全プロジェクトで共通。
+- 名簿 (`team.md`) はプロジェクトごと。`Project.members` に持ち、プロジェクトと一緒に保存・同期する (2026-11-19 に共通から変更)。
 - GitHub はリンクを貼るだけ。API での取り込みや同期はしない。
 - Google ドキュメント / スライド / スプレッドシート、Word / PowerPoint / Excel もリンクとして貼る。ファイルの添付はしない (保存先が要り、`localStorage` に入らないため)。OneDrive や SharePoint のファイルは URL を貼る。
 - アイコンは公式ロゴを使わず、この app 用に描いた形 (文書、スライド、表、Issue、PR) とサービス名で見分ける (AGENTS.md の「外部素材を使わない」と、商標の扱いのため)。
@@ -18,6 +18,7 @@ interface Project {
   name: string;        // 1〜40文字
   created: number;
   fields: FieldDef[];  // プロジェクトの項目
+  members: Member[];   // プロジェクトの名簿 (team.md)
 }
 interface FieldDef {
   id: string;
@@ -87,7 +88,6 @@ links?: { id: string; url: string }[];             // 参考資料。10件まで
 - GitHub の Issue の取り込み、状態の同期 (サーバーと GitHub App が要る)。
 - ファイルの添付 (保存先が要る)。
 - 全プロジェクトをまとめて見る画面。
-- プロジェクトごとの名簿と役割。
 
 ## 最初のプロジェクトの名前
 

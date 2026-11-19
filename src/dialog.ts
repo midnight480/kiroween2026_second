@@ -22,8 +22,10 @@ interface Ctx {
   /** The project the new task goes into (or the edited task's project). */
   project(task?: Task): Project | undefined;
   projects(): Project[];
-  members(): Member[];
-  addMember(name: string): Member;
+  /** The roster of a project. Each project has its own. */
+  members(projectId: string): Member[];
+  /** Add someone to the project's roster (or find them there). Null when the roster is full. */
+  addMember(name: string, projectId: string): Member | null;
   /** Return an error key to keep the dialog open, or null when the task was saved. */
   onSubmit(input: TaskInput, task?: Task): Key | null;
   onOpen(): void;
@@ -93,9 +95,11 @@ function fillAssignees(selected?: string) {
     fAssignee.appendChild(o);
   };
   add("", t("fNone"));
-  for (const m of ctx.members()) add(m.id, m.name);
+  const roster = ctx.members(fProject.value);
+  for (const m of roster) add(m.id, m.name);
   add("__new", t("fNewMember"));
-  fAssignee.value = selected && ctx.members().some((m) => m.id === selected) ? selected : "";
+  // someone from another project's roster cannot carry this task
+  fAssignee.value = selected && roster.some((m) => m.id === selected) ? selected : "";
   newMember.hidden = true;
 }
 
@@ -221,7 +225,8 @@ export const isOpen = () => dlg.open;
 function addMemberFromField() {
   const name = memberName.value.trim();
   if (!name) return showError("errMember");
-  const m = ctx.addMember(name);
+  const m = ctx.addMember(name, fProject.value);
+  if (!m) return showError("errMemberFull");
   memberName.value = "";
   clearError();
   fillAssignees(m.id);
@@ -254,6 +259,8 @@ export function initDialog(c: Ctx): void {
     const keep = readCustom().values ?? {};
     fieldDefs = ctx.projects().find((p) => p.id === fProject.value)?.fields ?? [];
     renderCustom({ ...(editing?.fields ?? {}), ...keep });
+    // and its own roster: keep the assignee only if they are on it
+    fillAssignees(fAssignee.value);
   });
   $("f-link-add").addEventListener("click", () => { addLink(); linkIn.focus(); });
   linkIn.addEventListener("keydown", (e) => {

@@ -12,11 +12,12 @@
 <body>
   <main class="doc">
     <header class="pagebar">
-      <div class="brand"><b>灯</b> Tomoshibi</div>
+      <a class="brand" href="./" data-i18n-title="brandTitle"><b>灯</b> Tomoshibi</a>
       <nav class="nav" data-i18n-aria="navAria">
         <a href="./" data-i18n="navBoard"></a>
         <a href="members.html" data-i18n="navTeam"></a>
         <a href="help.html" data-i18n="navHelp"></a>
+        <a href="api.html" data-i18n="navApi"></a>
       </nav>
       <div id="auth" class="auth" hidden></div>
       <div class="pickers">
@@ -45,12 +46,16 @@
     <ul class="en">
       <li><b>Account:</b> Clerk keeps your account details (such as your email address, and your name and picture if your sign-in method provides them).</li>
       <li><b>Tasks and projects:</b> their contents (title, deadline, notes, reference links, project fields and so on) are saved in our database with your Clerk user ID, so you see the same ledger on every device.</li>
-      <li>The team list, counts and settings stay in this browser.</li>
+      <li><b>Team lists:</b> each project's roster (names, roles, when the person marked as you was last seen) is saved with the project.</li>
+      <li><b>API keys:</b> keys are issued and kept by Clerk. For the request limit we store a one-way hash of the key (never the key itself), with a request count for the current minute.</li>
+      <li>Counts and settings stay in this browser.</li>
     </ul>
     <ul class="ja">
       <li><b>アカウント:</b> Clerk が、アカウントの情報 (メールアドレス。サインインの方法によっては名前とプロフィール画像) を管理します。</li>
       <li><b>課題とプロジェクト:</b> 中身 (件名、期限、メモ、参考資料のリンク、プロジェクトの項目の値など) を、Clerk のユーザー ID と一緒にデータベースに保存します。どの端末でも同じ帳面を見られるようにするためです。</li>
-      <li>名簿、数の記録、設定は、このブラウザに残ります。</li>
+      <li><b>名簿:</b> プロジェクトごとの名簿 (名前、役割、「自分」の印を付けた人の最後に見た時) を、プロジェクトと一緒に保存します。</li>
+      <li><b>API キー:</b> キーの発行と保管は Clerk が行います。回数の上限のために、キーの一方向のハッシュ (キーそのものではありません) と、直近1分の回数を保存します。</li>
+      <li>数の記録と設定は、このブラウザに残ります。</li>
     </ul>
     <h3 class="en">Access records</h3>
     <h3 class="ja">アクセスの記録</h3>
@@ -91,8 +96,8 @@
     <p class="en"><b>Your choice:</b> “OK” loads sign-in with every page, so it can show at once whether you are signed in. “Only when I sign in” sets no cookie until you press Sign in. Either way, the whole ledger works without signing in.</p>
     <p class="ja"><b>選べること:</b> 「OK」を選ぶと、ページを開くたびにサインインの仕組みを読み込み、サインインしているかをすぐに表示します。「サインインするときだけ」を選ぶと、サインインのボタンを押すまで Cookie を置きません。どちらでも、サインインせずに全ての機能を使えます。</p>
     <p><button type="button" id="consent-reset" class="ghost"><span class="en">Choose again</span><span class="ja">選び直す</span></button></p>
-    <p class="en">Tomoshibi's own entries in browser storage: <code>tomoshibi.tasks.v2</code>, <code>tomoshibi.projects</code>, <code>tomoshibi.project</code>, <code>tomoshibi.members</code>, <code>tomoshibi.me</code>, <code>tomoshibi.stats</code>, <code>tomoshibi.settings</code>, <code>tomoshibi.consent</code> (your cookie choice), <code>tomoshibi.signedIn</code>. They stay in this browser.</p>
-    <p class="ja">灯がブラウザの保存領域に置く値: <code>tomoshibi.tasks.v2</code>、<code>tomoshibi.projects</code>、<code>tomoshibi.project</code>、<code>tomoshibi.members</code>、<code>tomoshibi.me</code>、<code>tomoshibi.stats</code>、<code>tomoshibi.settings</code>、<code>tomoshibi.consent</code> (Cookie の選択)、<code>tomoshibi.signedIn</code>。どれもこのブラウザの中だけに残ります。</p>
+    <p class="en">Tomoshibi's own entries in browser storage: <code>tomoshibi.tasks.v2</code>, <code>tomoshibi.projects</code>, <code>tomoshibi.project</code>, <code>tomoshibi.members</code> (the old shared team list, kept as it was), <code>tomoshibi.me</code>, <code>tomoshibi.me.v2</code> (who you are in each project), <code>tomoshibi.stats</code>, <code>tomoshibi.settings</code>, <code>tomoshibi.consent</code> (your cookie choice), <code>tomoshibi.signedIn</code>. They stay in this browser.</p>
+    <p class="ja">灯がブラウザの保存領域に置く値: <code>tomoshibi.tasks.v2</code>、<code>tomoshibi.projects</code>、<code>tomoshibi.project</code>、<code>tomoshibi.members</code> (以前の共通の名簿。そのまま残します)、<code>tomoshibi.me</code>、<code>tomoshibi.me.v2</code> (プロジェクトごとの「自分」)、<code>tomoshibi.stats</code>、<code>tomoshibi.settings</code>、<code>tomoshibi.consent</code> (Cookie の選択)、<code>tomoshibi.signedIn</code>。どれもこのブラウザの中だけに残ります。</p>
 
     <h2><span class="en">Services we use</span><span class="ja">利用している外部のサービス</span></h2>
     <p class="en">We entrust information to these services to run Tomoshibi. Some are outside Japan.</p>

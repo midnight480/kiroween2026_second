@@ -12,11 +12,12 @@
 <body>
   <main class="doc wide">
     <header class="pagebar">
-      <div class="brand"><b>灯</b> Tomoshibi</div>
+      <a class="brand" href="./" data-i18n-title="brandTitle"><b>灯</b> Tomoshibi</a>
       <nav class="nav" data-i18n-aria="navAria">
         <a href="./" data-i18n="navBoard"></a>
         <a href="members.html" aria-current="page" data-i18n="navTeam"></a>
         <a href="help.html" data-i18n="navHelp"></a>
+        <a href="api.html" data-i18n="navApi"></a>
       </nav>
       <div id="auth" class="auth" hidden></div>
       <div class="pickers">
@@ -33,6 +34,10 @@
 
     <h1><b>名</b><span data-i18n="teamTitle"></span> <small id="team-count"></small></h1>
     <p class="lead" data-i18n="teamLead"></p>
+    <p id="m-project-wrap" class="team-project" hidden>
+      <label for="m-project" data-i18n="teamProject"></label>
+      <select id="m-project"></select>
+    </p>
 
     <form id="member-form" class="addrow" autocomplete="off" novalidate>
       <label class="sr-only" for="m-name" data-i18n="thName"></label>

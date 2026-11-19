@@ -95,6 +95,11 @@ button, input, select { font: inherit; }
 .brand { font-size: 18px; letter-spacing: .15em; white-space: nowrap; }
 .brand b { font-size: 26px; font-weight: 400; color: var(--flame); text-shadow: 0 0 12px #ff9d2e88; }
 .brand small { color: var(--text-faint); font-size: 11px; letter-spacing: .3em; margin-left: 8px; }
+.brand { color: inherit; text-decoration: none; cursor: pointer; border-radius: 2px; }
+.brand:hover b { color: #ffd08a; }
+.brand:focus-visible { outline: 2px solid var(--flame); outline-offset: 4px; }
+.team-project { display: flex; gap: 10px; align-items: center; margin: 0 0 14px; font-size: 13px; color: var(--text-dim); }
+.team-project select { min-height: 32px; }
 .pumpkin-btn { width: 46px; height: 42px; border: 0; background: transparent; cursor: pointer; padding: 0; filter: drop-shadow(0 0 6px #ff8a1c66); transition: transform .2s; }
 .pumpkin-btn:hover { transform: scale(1.1) rotate(-4deg); filter: drop-shadow(0 0 12px #ff8a1ccc); }
 .pumpkin-btn svg, .pumpkin-mini svg { width: 100%; height: 100%; }
@@ -518,5 +523,13 @@ body.safe .proj-menu { animation: none; }
 .doc-foot { margin-top: 40px; font-size: 13px; }
 .doc h3 { font-size: 14px; letter-spacing: .1em; margin: 18px 0 4px; }
 .doc code { font-size: 12px; overflow-wrap: anywhere; }
+.doc h3 { font-size: 14px; letter-spacing: .1em; margin: 22px 0 6px; color: var(--text-dim); font-weight: 600; }
+.doc pre { margin: 10px 0 14px; padding: 12px 14px; background: var(--field-bg); border: 1px solid var(--field-border); border-left: 3px solid var(--flame); overflow-x: auto; line-height: 1.6; }
+.doc pre code { font-size: 12.5px; overflow-wrap: normal; white-space: pre; font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; }
+.doc td code { white-space: nowrap; }
+.doc .toc { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 14px 0 6px; font-size: 13px; }
+.doc .toc a { color: var(--text-dim); text-decoration: none; border-bottom: 1px solid var(--col-line); }
+.doc .toc a:hover, .doc .toc a:focus-visible { color: var(--flame); }
+@media (max-width: 600px) { .doc td code { white-space: normal; overflow-wrap: anywhere; } }
 .doc button.ghost { font: inherit; font-size: 13px; padding: 8px 14px; min-height: 40px; background: transparent; color: var(--text); border: 1px solid var(--col-line); cursor: pointer; }
 .doc button.ghost:hover { border-color: var(--flame); color: var(--flame); }

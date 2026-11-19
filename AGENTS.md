@@ -28,7 +28,8 @@ Kiroween 2026 (https://kiroween.devpost.com/) の **Costume Contest** 部門向�
 - 音はすべて Web Audio で生成します。音声ファイルは使いません。ノードの組み合わせ方は `docs/audio.md`。
 - PWA としてホーム画面から使えるようにします。manifest と Service Worker は手書きで、依存パッケージは足しません (`docs/mobile.md`)。
 - レスポンシブ対応。720px 未満では設定類をハンバーガーメニュー (襖) に収めます (`docs/mobile.md`)。
-- 保存先: ゲストは `localStorage`。サインインした人の課題とプロジェクトは、Worker の API (`/api/data`、`/api/sync`) から Hyperdrive 経由で Neon に保存し、端末間で同じものが見える (`src/sync.ts`、`docs/deploy.md` の段階2)。名簿、統計、設定は、サインインしても端末に残る。
+- 保存先: ゲストは `localStorage`。サインインした人の課題とプロジェクトは、Worker の API (`/api/data`、`/api/sync`) から Hyperdrive 経由で Neon に保存し、端末間で同じものが見える (`src/sync.ts`、`docs/deploy.md` の段階2)。名簿はプロジェクトの中 (`Project.members`) にあるので、プロジェクトと一緒に同期される。統計と設定は、サインインしても端末に残る。
+- 公開 API: `/api/v1/*` を API キー (Clerk の API キー。アカウント画面で発行) で使う。使い方は `api.html`、設計は `docs/api.md`。
 - サインインは Clerk (`@clerk/clerk-js`、Worker 側の検証は `@clerk/backend`)。任意で、ゲストのまま全機能が使えます。
 - **設定の値は環境変数で渡します。** 変数の一覧は `.env.example` (コミットする、値は空)。実際の値は git 管理外のファイルに置き、コードや設定ファイルに直接書きません。
   - `.env.development.local`: `npm run dev` のときだけ読まれる。Clerk の開発用キー (`npx -y clerk@latest env pull --instance dev --file .env.development.local`)。
@@ -64,14 +65,16 @@ Cloudflare の操作は `cf` CLI (https://developers.cloudflare.com/cf/) で行�
 
 ```
 index.html        ゲート、ヘッダー、看板(3列)、フッター、登録モーダル、#curse
-members.html      名簿 (チームメンバー、役割、最後に見た時)
+members.html      名簿 (プロジェクトごとのメンバー、役割、最後に見た時)
 help.html         ヘルプページ (ショートカット一覧、使い方)
+api.html          API ドキュメント (キーの発行、エンドポイント、例)。ヘルプとは別のページ
 privacy.html      プライバシーポリシー (英語と日本語。Cookie の選択のやり直し)
 src/main.ts       看板の描画、カード、列の間のドラッグ、御札の封、燃やす、蝋の継ぎ足し、元に戻す、期限判定、テーマ、言語、ショートカット
 src/dialog.ts     登録・編集モーダル (件名、期限、担当者、状態、プロジェクトの項目、参考資料、メモ、盛り塩のエラー)
 src/projectDialog.ts プロジェクトの作成と設定 (項目の編集、削除)
 src/links.ts      参考資料のリンクの検査、サービスの見分け、アイコン
-src/members.ts    名簿の画面
+src/members.ts    名簿の画面 (プロジェクトを選んで、その名簿を編集する)
+src/api.ts        API ドキュメントのページ
 src/auth.ts       任意のサインイン (Clerk)。看板を先に出し、読み込めなければゲストのまま
 src/page.ts       名簿、ヘルプ、プライバシーで共通のテーマ・言語の初期化
 src/consent.ts    Cookie のバナー。Cookie は Clerk のものだけなので、選べるのは Clerk をいつ読み込むか (ページを開いたとき / サインインを押したとき)
@@ -80,14 +83,15 @@ src/help.ts       ヘルプページ
 src/curse.ts      期限切れの呪いシーケンス (暗転→血→女→飛びかかり)
 src/presence.ts   気配の演出 (人影、目、囁き、ずれ、改変)
 src/audio.ts      Web Audio による効果音・環境音
-src/store.ts      Task型 (v2)、担当者、localStorage (v1 からの移行、壊れたデータの退避)、統計、残り時間の整形、蝋燭の見た目の割合
+src/store.ts      Task型 (v2)、プロジェクトと名簿、localStorage (v1 からの移行、壊れたデータの退避)、統計、残り時間の整形、蝋燭の見た目の割合
 src/i18n.ts       英語・日本語の辞書、期限の日時の整形 (和ホラーの語は入れない)
 src/style.css     全スタイル (ライトとダークは変数で切り替え)
 public/           favicon (favicon.svg が原本、favicon.ico、apple-touch-icon.png)。そのまま配信される
 cloudflare.config.ts  Cloudflare Workers の設定 (cf CLI 用。Worker 名、カスタムドメイン、Hyperdrive、/api/* の振り分け)
 worker/index.ts   Worker のコード (/api/health、/api/data、/api/sync)。Clerk のトークンで本人を確かめ、本人の行だけを読み書きする
+worker/v1.ts      公開 API (/api/v1/*)。Clerk の API キーで持ち主を確かめる。回数の上限は api_rate テーブル
 src/sync.ts       サインイン中の保存先。変わった課題とプロジェクトだけを /api/sync に送る。失敗したら残して送り直す
-db/migrations/    Neon のテーブル (tasks、projects)。npm run db:migrate で流す
+db/migrations/    Neon のテーブル (tasks、projects、api_rate)。npm run db:migrate で流す
 worker/tsconfig.json Worker 側の型チェック (画面側の DOM の型と分ける)
 docs/             設計資料 (下記)
 ```
@@ -97,7 +101,8 @@ docs/             設計資料 (下記)
 - `docs/concept.md` 目的、審査基準、ユーザーの意向
 - `docs/features.md` 基本機能、優先度、要判断の点
 - `docs/projects.md` 複数プロジェクト、プロジェクトの項目、参考資料のリンク
-- `docs/team.md` 名簿、役割、最後に見た時
+- `docs/team.md` 名簿 (プロジェクトごと)、役割、最後に見た時
+- `docs/api.md` 公開 API、API キー、上限
 - `docs/task-management.md` タスク管理の機能仕様 (状態、データ、操作、受け入れ基準)
 - `docs/visual-design.md` 色、文字、質感、動き、仕上げの確認項目
 - `docs/japanese-horror.md` 和ホラー要素の意味と、審査員への英語の伝え方

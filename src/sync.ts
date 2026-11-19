@@ -61,6 +61,29 @@ export function start(getToken: Token, server: { tasks: Task[]; projects: Projec
   });
 }
 
+/**
+ * Sign-in: load the person's ledger from the server and start saving there.
+ * On the very first sign-in the server is empty, and `local` (this device's guest ledger) moves up:
+ * the caller gets a copy of it with `first: true` and should save it once, so it is sent.
+ */
+export async function connect(
+  getToken: Token, local: { tasks: Task[]; projects: Project[] }, error: () => void,
+  /** Checked after loading: false when the person signed out or switched meanwhile. Nothing starts then. */
+  wanted: () => boolean = () => true,
+): Promise<{ data: { tasks: Task[]; projects: Project[] }; first: boolean } | null> {
+  const server = await fetchData(getToken);
+  if (!wanted()) return null;
+  const first = !server.tasks.length && !server.projects.length;
+  start(getToken, server, error);
+  return { data: first ? structuredClone(local) : server, first };
+}
+
+/** True when the server has something the board has not seen (another device, or the API). */
+export function differs(server: { tasks: Task[]; projects: Project[] }): boolean {
+  const now = { tasks: toMap(server.tasks), projects: toMap(server.projects) };
+  return KINDS.some((k) => now[k].size !== base[k].size || [...now[k]].some(([id, data]) => base[k].get(id) !== data));
+}
+
 /** Back to the guest ledger in localStorage. Sends what is left first, if it can. */
 export async function stop(): Promise<void> {
   clearTimeout(timer);

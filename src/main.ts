@@ -1,7 +1,7 @@
 import "./style.css";
 import * as audio from "./audio";
 import {
-  load, save, loadStats, saveStats, loadMembers, saveMembers, newMember, touchMe, MEMBERS_STORAGE_KEY, loadInfo, setSaveFailHandler,
+  load, save, loadStats, saveStats, newMember, touchMe, MAX_MEMBERS, loadInfo, setSaveFailHandler,
   loadProjects, saveProjects, newProject, projectName, getCurrentProject, setCurrentProject, ensureProjects, PROJECTS_STORAGE_KEY, type Project, type FieldDef,
   formatLeft, truePct, visualPct, isOverdue, STATUSES, type Task, type Status, type Member, type Stats,
 } from "./store";
@@ -26,7 +26,6 @@ const COL_KEY: Record<Status, Key> = { todo: "colTodo", doing: "colDoing", done:
 
 let tasks: Task[] = load();
 let stats: Stats = loadStats();
-let members: Member[] = loadMembers();
 let projects: Project[] = loadProjects();
 let currentId = "";
 const cur = () => projects.find((p) => p.id === currentId) ?? projects[0];
@@ -172,7 +171,12 @@ function persist() {
   }
   save(tasks);
   saveStats(stats);
-  touchMe();
+  seen();
+}
+
+/** Record that "me" is here in the open project (at most once a minute). */
+function seen(force = false) {
+  if (touchMe(cur(), force)) saveProjects(projects);
 }
 
 /* ---------- undo: five seconds to take the last put-out or burn back ---------- */
@@ -269,20 +273,23 @@ function extend(task: Task, min: number) {
 }
 
 /* ---------- the dialog ---------- */
-function addMember(name: string): Member {
-  const found = members.find((m) => m.name === name);
+/** Add someone to a project's roster from the task form. Each project keeps its own roster. */
+function addMember(name: string, projectId: string): Member | null {
+  const p = projects.find((x) => x.id === projectId);
+  if (!p) return null;
+  const found = p.members.find((m) => m.name === name);
   if (found) return found;
+  if (p.members.length >= MAX_MEMBERS) return null;
   const m = newMember(name);
-  members = loadMembers(); // the team page may have changed the list
-  members.push(m);
-  saveMembers(members);
+  p.members.push(m);
+  saveProjects(projects);
   return m;
 }
 
 initDialog({
   project: (task) => projects.find((p) => p.id === (task?.projectId ?? currentId)),
   projects: () => projects,
-  members: () => members,
+  members: (projectId) => projects.find((p) => p.id === projectId)?.members ?? [],
   addMember,
   onOpen: () => { /* hauntings wait while the user writes (see checkExpiry and hooks.cards) */ },
   onClose: () => {
@@ -720,7 +727,7 @@ function refresh() {
     el.classList.toggle("out", out);
     el.setAttribute("aria-label", t("cardAria", { title: task.title }));
     el.querySelector("h3")!.textContent = task.title;
-    const m = task.assignee ? members.find((x) => x.id === task.assignee) : undefined;
+    const m = task.assignee ? projects.find((p) => p.id === task.projectId)?.members.find((x) => x.id === task.assignee) : undefined;
     el.querySelector(".who")!.innerHTML = m ? `<span class="avatar" aria-hidden="true">${esc([...m.name][0] ?? "")}</span>${esc(m.name)}` : "";
     el.querySelector(".note")!.textContent = task.note ?? "";
     // only touch the DOM when something changed: links must stay clickable between ticks
@@ -854,12 +861,11 @@ async function followAuth() {
     return;
   }
   try {
-    const server = await ledger.fetchData(sessionToken);
-    if (ledgerUser !== user) return; // signed out or switched while loading
-    const first = !server.tasks.length && !server.projects.length;
-    ledger.start(sessionToken, server, () => notify("errSync", 6000));
+    const got = await ledger.connect(sessionToken, { tasks, projects }, () => notify("errSync", 6000), () => ledgerUser === user);
+    if (!got) return; // signed out or switched while loading
+    const { data, first } = got;
     // First sign-in: this device's candles move to the server. The guest copy stays in localStorage.
-    replaceData(first ? { tasks: structuredClone(tasks), projects: structuredClone(projects) } : server);
+    replaceData(data);
     if (first) { save(tasks); saveProjects(projects); }
     announce(t(first && tasks.length ? "syncMoved" : "syncOn"));
   } catch (e) {
@@ -873,12 +879,30 @@ async function pullLedger() {
   if (!ledger.active() || ledger.pending() || dragging || cursing) return;
   try {
     const server = await ledger.fetchData(sessionToken);
-    if (!ledger.active() || ledger.pending()) return;
+    if (!ledger.active() || ledger.pending() || dragging || cursing || isOpen() || holding()) return;
+    if (!ledger.differs(server)) return; // nothing new: leave the board (and what is under the pointer) alone
     ledger.start(sessionToken, server, () => notify("errSync", 6000));
     replaceData(server);
   } catch { /* offline: keep what is on the board */ }
 }
 onAuthChange(() => { void followAuth(); });
+/** A seal or a burn is being held down: never redraw the card under the finger. */
+const holding = () => !!document.querySelector(".peeling");
+// Tasks added through the API (or on another device) show up within a minute while the tab is open.
+setInterval(() => { if (!document.hidden) void pullLedger(); }, 60_000);
+
+/* ---------- the brand: back to the top ---------- */
+// On the other pages it is a plain link to the board. Here we are already on the board, and a
+// reload would bring back the gate, so it closes what is open and returns to the top instead.
+$("brand").addEventListener("click", (e) => {
+  if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return; // new tab / window: let the link work
+  e.preventDefault();
+  if (gateUp() || cursing) return;
+  closeMenu(false);
+  scrollTo({ top: 0, behavior: isSafe() ? "auto" : "smooth" });
+  $("board").scrollTo?.({ left: 0, top: 0 });
+  $("new").focus();
+});
 
 /* ---------- boot ---------- */
 setLang(langSel.value as Lang);
@@ -893,12 +917,12 @@ void initAuth($("auth"));
 initConsent(allowAuth);
 setInterval(() => { refresh(); void checkExpiry(); }, 1000);
 // a tab coming back from sleep checks the deadlines at once
-document.addEventListener("visibilitychange", () => { if (!document.hidden) { touchMe(); refresh(); void checkExpiry(); void pullLedger(); } });
-touchMe(true);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) { seen(); refresh(); void checkExpiry(); void pullLedger(); } });
+seen(true);
 // the team page, in another tab, renamed or removed someone
 addEventListener("storage", (e) => {
-  if (e.key === MEMBERS_STORAGE_KEY) { members = loadMembers(); refresh(); }
-  else if (e.key === PROJECTS_STORAGE_KEY && !ledger.active()) {
+  // rosters live in the projects, so a change on the team page arrives here too
+  if (e.key === PROJECTS_STORAGE_KEY && !ledger.active()) {
     projects = loadProjects();
     if (ensureProjects(projects, tasks, t("projFirst"))) saveProjects(projects);
     if (!projects.some((p) => p.id === currentId)) currentId = projects[0].id;

@@ -23,7 +23,7 @@ interface Task {
 }
 ```
 - 保存先は、ゲストなら `localStorage` の `tomoshibi.tasks.v2`、サインインした人なら Neon (`src/sync.ts` から Worker の `/api/sync`。`docs/deploy.md` の段階2)。プロジェクトも同じ。初回に v1 (`tomoshibi.tasks.v1`) があれば、全て `todo` として移す。v1 のキーは消さない。
-- 担当者の一覧は `tomoshibi.members` (`{ id, name, role, created, lastSeen? }[]`)、この端末の「自分」は `tomoshibi.me` (`team.md`)。設定は `tomoshibi.settings` (`safe`, `mute`, `lang`: en / ja, `theme`: system / light / dark)。ヘルプページも同じ設定を読む。
+- 名簿はプロジェクトごとで、`Project.members` (`{ id, name, role, created, lastSeen? }[]`) に持つ。この端末の「自分」は `tomoshibi.me.v2` (`{ [projectId]: memberId }`) (`team.md`)。設定は `tomoshibi.settings` (`safe`, `mute`, `lang`: en / ja, `theme`: system / light / dark)。ヘルプページも同じ設定を読む。
 - 期限切れは `isOverdue()`: `status !== "done"` かつ `due <= now`。`cursed` は呪いを再生済みかだけを表す。
 - 蝋燭の見た目の残り割合は `visualPct = (due - now - penalty) / (due - created)`。時計の残り割合は `truePct = (due - now) / (due - created)`。罰と伝染は `penalty` だけを増やす。
 - Cookie の選択は `tomoshibi.consent` (`all` / `essential`)、サインインしていたかは `tomoshibi.signedIn` (`src/consent.ts`)。灯そのものは Cookie を置かない。Cookie は Clerk のものだけで、`essential` のときはサインインのボタンを押すまで Clerk を読み込まない (サインインしていた人は、ページを開いたときに読み込む)。プライバシーポリシーは `privacy.html`。保存する値を足したら、`privacy.html` の一覧も直す。
@@ -35,7 +35,8 @@ interface Task {
 - `index.html`: ゲート、ヘッダー (ブランドと「New candle」)、看板 (`#board` の3つの `.col`)、フッター、登録モーダル (`<dialog id="task-dialog">`)、`#curse`。
 - `src/main.ts`: 看板の描画 (`render()` は並び順だけを直し、`refresh()` は毎秒、文字と蝋燭を直す)、カードの操作、列の間のドラッグ (`wireDrag()`)、期限判定、気配の hooks、ショートカット。
 - `src/dialog.ts`: 登録・編集モーダル。入力の検証 (件名、期限の範囲) と、担当者の追加。結果は `onSubmit` で `main.ts` に渡す。
-- `members.html` + `src/members.ts`: 名簿。仕様は `team.md`。
+- `members.html` + `src/members.ts`: 名簿。プロジェクトを選び、その名簿を編集する。サインイン中は看板と同じく `sync.connect()` でサーバーの帳面を読み書きする。仕様は `team.md`。
+- `api.html` + `src/api.ts`: API ドキュメント。`worker/v1.ts` の公開 API の使い方。設計は `api.md`。
 - `src/projectDialog.ts`: プロジェクトの作成と設定 (項目の編集、削除)。メニューは `main.ts` の `buildMenu()` / `openMenu()`。仕様は `projects.md`。
 - `src/links.ts`: URL の検査 (`cleanUrl`、http(s) だけ)、サービスの見分け (`describe`)、アイコン (`icon`)。
 - `help.html` + `src/help.ts`: ヘルプページ。ルーターは使わず、`vite.config.ts` で3ページをビルドする。
