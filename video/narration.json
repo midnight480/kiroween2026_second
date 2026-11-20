@@ -1,0 +1,47 @@
+{
+  "voice": "Samantha",
+  "rate": 165,
+  "scenes": [
+    {
+      "id": "01-gate",
+      "show": "The gate. Nothing moves yet.",
+      "text": "Tomoshibi. The Candle Ledger. A to-do app where every deadline is a candle."
+    },
+    {
+      "id": "02-board",
+      "show": "Enter the board. Slow look across the three columns.",
+      "text": "Each task is an ofuda, a paper talisman, with a candle beside it. The candle is the time left before the deadline. A short candle is easy to see, even from across the room. Cards carry assignees, project fields, and links to GitHub or Google Docs."
+    },
+    {
+      "id": "03-haunting",
+      "show": "Urgent cards glow. A shadow passes. The whisper card's candle is shorter than its clock.",
+      "text": "When a deadline is close, the card begins to glow. And sometimes, the candle looks shorter than the clock says. Something has been eating the wax. The real deadline never changes. Only the candle does."
+    },
+    {
+      "id": "04-add",
+      "show": "Press the jack-o'-lantern. Submit with no title: the salt appears. Then fill in the task.",
+      "text": "To add a task, press the jack-o'-lantern, the only American guest in this Japanese house. Leave the title empty, and a small mound of salt appears. In Japan, mori-shio, piled salt, keeps unwanted things away. Here, it keeps out bad input."
+    },
+    {
+      "id": "05-finish",
+      "show": "Hold the seal to finish a task. Add wax to another.",
+      "text": "To finish a task, press and hold to peel off its seal. Holding, not clicking, so nothing is finished by mistake. Running late? Add wax, and the candle burns longer."
+    },
+    {
+      "id": "06-language",
+      "show": "The overdue card's seal. Switch to Japanese and the light theme, then back.",
+      "text": "Tomoshibi speaks English and Japanese, in dark and in light. A few words stay Japanese in every language, like this seal. It reads, oso. Overdue."
+    },
+    {
+      "id": "07-curse",
+      "show": "The last ten seconds of a candle: the counting song. Then the curse.",
+      "text": "And if you let a candle burn out.",
+      "hold": 34
+    },
+    {
+      "id": "08-outro",
+      "show": "Safe mode on. The board, calm.",
+      "text": "The curse comes only once for each task. Safe mode, mute, and reduced motion turn every effect off, and the ledger still works. Sign in to keep it on every device, or add candles through the API. Built with Kiro, for Kiroween. Tomoshibi. Do not let a candle die alone."
+    }
+  ]
+}

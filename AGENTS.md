@@ -53,6 +53,7 @@ npm run secrets:build  # .env.local の Neon の値を .env.worker.production �
 npm run deploy:secrets # 上に加えて .env.worker.production のシークレット (CLERK_SECRET_KEY、Neon の5つ) も上げる
 npm run db:migrate    # db/migrations/*.sql を Neon に流す (.env.local の直接接続。済んだものは飛ばす)
 npm run demo:seed     # 本番の帳面に撮影用のデモ (Kiroween 2026 の提出作業) を入れ直す。日本語と英語の2つのプロジェクト。--lang en (英語の方で呪いを出す)、--curse-in 分、--remove (docs/demo.md)
+npm run video         # デモ動画を作る (say でナレーション、本番をゲストで録画、ffmpeg でつなぐ)。video/out/tomoshibi-demo.mp4 (docs/video.md)
 npm run cf:whoami     # cf のログイン状態を確認 (未ログインなら npx cf auth login)
 ```
 
@@ -112,6 +113,7 @@ docs/             設計資料 (下記)
 - `docs/architecture.md` 構成、データ、シーケンス、拡張方法
 - `docs/audio.md` 音の役割、Web Audio のノードの組み合わせ方、モバイルでの注意
 - `docs/mobile.md` PWA、画面幅の区分、ハンバーガーメニュー、タッチ操作
+- `docs/video.md` デモ動画の作り方 (台本、録画、つなぎ)
 - `docs/demo.md` 撮影用のデモデータ (`npm run demo:seed`)
 - `docs/deploy.md` Cloudflare Workers、Hyperdrive、Neon へのデプロイ手順
 - `docs/roadmap.md` 未実装項目と未確認事項

@@ -14,7 +14,8 @@
     "typecheck": "tsc --noEmit && cf workers types && tsc -p worker",
     "db:migrate": "node scripts/migrate.mjs",
     "secrets:build": "node scripts/worker-secrets.mjs",
-    "demo:seed": "node scripts/demo-seed.mjs"
+    "demo:seed": "node scripts/demo-seed.mjs",
+    "video": "node video/tts.mjs && node video/record.mjs && node video/build.mjs"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "^2.0.0-rc.1",

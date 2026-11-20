@@ -5,3 +5,6 @@ dist
 .env*
 .neon
 !.env.example
+
+# demo video build output (video/)
+video/out/
