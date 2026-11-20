@@ -7,13 +7,20 @@
       "id": "00-cold",
       "show": "Cold open: a close look at a candle about to go out, its seconds ticking.",
       "clip": "07-curse",
-      "range": ["curse-13", "curse-9"],
+      "range": [
+        "curse-13",
+        "curse-9"
+      ],
       "text": "Every deadline is a candle."
     },
     {
       "id": "01-gate",
-      "show": "The gate. Nothing moves yet.",
-      "text": "Toh-moh-shee-bee. The Candle Ledger. A to-do app where fear shows you what is urgent."
+      "show": "The gate. Nothing moves yet. (6 s: the voice and a breath.)",
+      "text": "Toh-moh-shee-bee. The Candle Ledger. A to-do app where fear shows you what is urgent.",
+      "range": [
+        0,
+        6.3
+      ]
     },
     {
       "id": "02-board",
@@ -44,12 +51,28 @@
       "id": "07-curse",
       "show": "The last seconds of the candle, close, with the counting song. Then the curse, trimmed.",
       "text": "And if you let a candle burn out.",
-      "range": ["curse-8", "curseEnd+1.8"],
-      "cuts": [["curse+1.0", "curse+2.3"], ["curse+12", "curse+15"], ["curseEnd-2.4", "curseEnd-0.4"]]
+      "range": [
+        "curse-8",
+        "curseEnd+1.8"
+      ],
+      "cuts": [
+        [
+          "curse+1.0",
+          "curse+2.3"
+        ],
+        [
+          "curse+12",
+          "curse+15"
+        ],
+        [
+          "curseEnd-2.4",
+          "curseEnd-0.4"
+        ]
+      ]
     },
     {
       "id": "08-outro",
-      "show": "Safe mode on: close on the footer. The board, calm.",
+      "show": "Safe mode on (close on the switch). Then a task is finished with the seal, close: the ledger still works.",
       "text": "The curse comes only once for each task. Safe mode turns every effect off, and the ledger still works. Sign in to share it across devices, or add candles through the API. Built with Kiro, for Kiroween. Toh-moh-shee-bee. Do not let a candle die alone."
     }
   ]

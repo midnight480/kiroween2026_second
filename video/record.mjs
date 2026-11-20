@@ -151,8 +151,17 @@ const SCENES = {
     mark();
     await sleep(1500);
     await page.click("#safe");
-    await zoom("safe", page.locator("label:has(#safe)"), 3500);
-    await sleep(durations["08-outro"].scene * 1000 - 3500);
+    await zoom("safe", page.locator("label:has(#safe)"), 3000);
+    // with every effect off, the ledger still works: finish a task
+    const c = card(page, "Check the contrast");
+    await c.scrollIntoViewIfNeeded();
+    await c.locator(".seal").hover();
+    await sleep(500);
+    await page.mouse.down();
+    // close while the seal peels (900 ms), then the whole board: the card leaves for Done
+    await zoom("safe-seal", c, 1100, { left: 70 });
+    await page.mouse.up();
+    await sleep(Math.max(3000, durations["08-outro"].scene * 1000 - 5600));
   },
 };
 // the curse task's deadline, counted from when the page opens: room for the cold open (00-cold) and 10 s of song
