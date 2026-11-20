@@ -50,39 +50,46 @@ const SCENES = {
     mark();
     await sleep(durations["01-gate"].scene * 1000 + 1500);
   },
-  async "02-board"(page, mark, enter) {
+  async "02-board"(page, mark, enter, zoom) {
     await enter(); mark();
     const d = durations["02-board"].scene * 1000;
     await page.mouse.move(300, 400, { steps: 30 });
-    await sleep(d * 0.3);
+    await sleep(d * 0.25);
     await page.mouse.move(800, 350, { steps: 40 });
-    await sleep(d * 0.3);
-    await card(page, "Polish the ofuda cards").hover();
-    await sleep(d * 0.4);
+    await sleep(d * 0.2);
+    // a close look at one card: assignee, project fields, links
+    const c = card(page, "Polish the ofuda cards");
+    await c.hover();
+    await zoom("card", c, d * 0.45, { left: 70 });
+    await sleep(800);
   },
-  async "03-haunting"(page, mark, enter) {
+  async "03-haunting"(page, mark, enter, zoom) {
     await enter();
-    await card(page, "Check the contrast").scrollIntoViewIfNeeded();
+    const urgent = card(page, "Check the contrast");
+    await urgent.scrollIntoViewIfNeeded();
     mark();
     const d = durations["03-haunting"].scene * 1000;
-    await card(page, "Check the contrast").hover();
-    await sleep(d * 0.25);
+    await urgent.hover();
+    await zoom("urgent", urgent, d * 0.3, { left: 70 });
     await page.evaluate(() => window.__t?.fire(0)); // a figure passes
-    await sleep(d * 0.25);
-    await card(page, "Tune the whisper").scrollIntoViewIfNeeded();
-    await card(page, "Tune the whisper").hover();
     await sleep(d * 0.2);
+    const eaten = card(page, "Tune the whisper");
+    await eaten.scrollIntoViewIfNeeded();
+    await eaten.hover();
+    await zoom("eaten", eaten, d * 0.35, { left: 70 });
     await page.evaluate(() => window.__t?.fire(3)); // a card shifts
-    await sleep(d * 0.3);
+    await sleep(d * 0.15);
   },
-  async "04-add"(page, mark, enter) {
+  async "04-add"(page, mark, enter, zoom) {
     await enter(); mark();
     const d = durations["04-add"].scene * 1000;
     await sleep(800);
     await page.click("#new");
-    await sleep(d * 0.3);
+    await sleep(d * 0.25);
     await page.click("#dlg-ok"); // no title: the salt
-    await sleep(d * 0.45);
+    await sleep(300);
+    await zoom("salt", page.locator("#task-form footer"), d * 0.4, { top: 60 });
+    await sleep(d * 0.1);
     await page.locator("#f-title").pressSequentially("Record the narration with say", { delay: 55 });
     await page.click('.chips button[data-min="30"]');
     await page.selectOption("#f-assignee", { index: 1 }).catch(() => {});
@@ -90,61 +97,66 @@ const SCENES = {
     await page.click("#dlg-ok");
     await sleep(2500);
   },
-  async "05-finish"(page, mark, enter) {
+  async "05-finish"(page, mark, enter, zoom) {
     await enter();
     const c = card(page, "Check the board at 360px");
     await c.scrollIntoViewIfNeeded();
     mark();
-    await sleep(1500);
-    const seal = c.locator(".seal");
-    await seal.hover();
+    await sleep(1200);
+    await c.locator(".seal").hover();
     await page.mouse.down();
-    await sleep(1400);
+    await zoom("seal", c, 1400, { left: 70 });
     await page.mouse.up();
-    await sleep(durations["05-finish"].scene * 1000 * 0.45);
+    await sleep(durations["05-finish"].scene * 1000 * 0.35);
     const w = card(page, "Write the Devpost story");
     await w.scrollIntoViewIfNeeded();
     await w.locator(".act.extend").click();
-    await sleep(800);
+    await sleep(600);
     await w.locator(".wax-pick").selectOption({ index: 2 }).catch(() => {});
-    await sleep(3000);
+    await zoom("wax", w, 2600, { left: 70 });
+    await sleep(600);
   },
-  async "06-language"(page, mark, enter) {
+  async "06-language"(page, mark, enter, zoom) {
     await enter();
     const c = card(page, "Read the submission rules");
     await c.scrollIntoViewIfNeeded();
     mark();
-    const d = durations["06-language"].scene * 1000;
     await c.hover();
-    await sleep(d * 0.25);
+    await zoom("seal-en", c, 3500);
     await page.selectOption("#lang", "ja");
-    await sleep(d * 0.2);
+    await sleep(600);
+    await zoom("seal-ja", c, 3500);
     await page.selectOption("#theme", "light");
-    await sleep(d * 0.2);
+    await sleep(3500);
     await page.selectOption("#lang", "en");
     await page.selectOption("#theme", "dark");
-    await sleep(d * 0.35);
+    await sleep(2000);
   },
-  async "07-curse"(page, mark, enter) {
+  async "07-curse"(page, mark, enter, zoom) {
     await enter();
-    await card(page, "Upload the demo video").scrollIntoViewIfNeeded();
+    const c = card(page, "Upload the demo video");
+    await c.scrollIntoViewIfNeeded();
     mark();
-    await card(page, "Upload the demo video").hover();
-    // wait for the curse to come and to go, then let the quiet board stay a moment
-    await page.waitForFunction(() => !document.getElementById("curse").hidden, null, { timeout: 60_000 });
+    await c.hover();
+    // the last seconds of the candle, close: the counting song is written on the card
+    await zoom("doomed", c, 40_000, { left: 70, until: () => page.evaluate(() => !document.getElementById("curse").hidden) });
+    zoom.stamp("curse");
+    // wait for the curse to go, then let the quiet board stay a moment
     await page.waitForFunction(() => document.getElementById("curse").hidden, null, { timeout: 60_000 });
+    zoom.stamp("curseEnd");
     await sleep(2500);
   },
-  async "08-outro"(page, mark, enter) {
+  async "08-outro"(page, mark, enter, zoom) {
     await enter();
     mark();
     await sleep(1500);
     await page.click("#safe");
-    await sleep(durations["08-outro"].scene * 1000);
+    await zoom("safe", page.locator("label:has(#safe)"), 3500);
+    await sleep(durations["08-outro"].scene * 1000 - 3500);
   },
 };
-// the curse task's deadline, counted from when the page opens (enter + the narration lead + 10 s of song)
-const CURSE_AT = { "07-curse": 15 };
+// the curse task's deadline, counted from when the page opens: room for the cold open (00-cold) and 10 s of song
+const CURSE_AT = { "07-curse": 20 };
 
 /* ---------- recording ---------- */
 const browser = await chromium.launch({ executablePath: CHROME, headless: true, args: ["--autoplay-policy=no-user-gesture-required"] });
@@ -169,16 +181,37 @@ try {
     const page = await context.newPage();
     await page.goto(`${ORIGIN}/?debug`, { waitUntil: "networkidle" });
     let start = 0;
+    const zooms = [];
+    const at = () => (Date.now() - t0) / 1000 - start;
     const mark = () => { start = (Date.now() - t0) / 1000; };
     const enter = async () => { await page.click("#enter"); await sleep(1900); };
-    await run(page, mark, enter);
+    /**
+     * A close-up for build.mjs: note where `locator` is and for how long (ms, or until `until()` is true).
+     * `pad` widens the box (left: 70 takes in the candle beside a card; a negative right trims it).
+     */
+    const zoom = async (name, locator, ms, pad = {}) => {
+      const b = await locator.boundingBox();
+      const from = at();
+      if (pad.until) {
+        const limit = Date.now() + ms;
+        while (Date.now() < limit && !(await pad.until())) await sleep(100);
+      } else await sleep(ms);
+      if (b) {
+        const x = b.x - (pad.left ?? 16), y = b.y - (pad.top ?? 16);
+        const w = b.width + (pad.left ?? 16) + (pad.right ?? 16), h = b.height + (pad.top ?? 16) + 16;
+        zooms.push({ name, from: +from.toFixed(2), to: +at().toFixed(2), box: [x, y, w, h].map((v) => Math.round(v)) });
+      }
+    };
+    const marks = {};
+    zoom.stamp = (name) => { marks[name] = +at().toFixed(2); };
+    await run(page, mark, enter, zoom);
     const end = (Date.now() - t0) / 1000;
     const video = page.video();
     await context.close();
     const out = `video/out/clips/${id}.webm`;
     renameSync(await video.path(), out);
     rmSync(dir, { recursive: true, force: true });
-    clips[id] = { file: out, start: +start.toFixed(2), end: +end.toFixed(2) };
+    clips[id] = { file: out, start: +start.toFixed(2), end: +end.toFixed(2), zooms, marks };
     writeFileSync(clipsFile, JSON.stringify(clips, null, 2));
     console.log(`${id.padEnd(12)} ${(end - start).toFixed(1)}s`);
   }
