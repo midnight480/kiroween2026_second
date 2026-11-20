@@ -13,7 +13,8 @@
     "cf:whoami": "cf auth whoami",
     "typecheck": "tsc --noEmit && cf workers types && tsc -p worker",
     "db:migrate": "node scripts/migrate.mjs",
-    "secrets:build": "node scripts/worker-secrets.mjs"
+    "secrets:build": "node scripts/worker-secrets.mjs",
+    "demo:seed": "node scripts/demo-seed.mjs"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "^2.0.0-rc.1",
