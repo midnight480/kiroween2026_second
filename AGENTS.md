@@ -52,7 +52,7 @@ npm run deploy        # 型チェックとビルドをして、Cloudflare Worker
 npm run secrets:build  # .env.local の Neon の値を .env.worker.production に写す (値は出さない)
 npm run deploy:secrets # 上に加えて .env.worker.production のシークレット (CLERK_SECRET_KEY、Neon の5つ) も上げる
 npm run db:migrate    # db/migrations/*.sql を Neon に流す (.env.local の直接接続。済んだものは飛ばす)
-npm run demo:seed     # 本番の帳面に撮影用のデモ (Kiroween 2026 の提出作業) を入れ直す。--lang ja、--curse-in 分、--remove (docs/demo.md)
+npm run demo:seed     # 本番の帳面に撮影用のデモ (Kiroween 2026 の提出作業) を入れ直す。日本語と英語の2つのプロジェクト。--lang en (英語の方で呪いを出す)、--curse-in 分、--remove (docs/demo.md)
 npm run cf:whoami     # cf のログイン状態を確認 (未ログインなら npx cf auth login)
 ```
 

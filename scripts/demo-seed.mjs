@@ -1,8 +1,9 @@
 // Put a demo ledger ("making the Kiroween 2026 entry") into the production board, for screenshots
 // and the demo video. Run it right before recording: every time is counted from the moment it runs.
 //
-//   npm run demo:seed                     English titles, the curse comes 3 minutes later
-//   npm run demo:seed -- --lang ja        Japanese titles
+//   npm run demo:seed                     both ledgers (日本語 and English); the Japanese one is live:
+//                                         its curse comes 3 minutes later
+//   npm run demo:seed -- --lang en        the same, but the English ledger is live
 //   npm run demo:seed -- --curse-in 5     the curse comes 5 minutes later (1..30)
 //   npm run demo:seed -- --remove         take the demo out again
 //   npm run demo:seed -- --print          print the demo as JSON (no key, no database)
@@ -12,19 +13,22 @@
 // connection in .env.local (DATABASE_URL_UNPOOLED), in the same JSON shape the board saves, because
 // the API cannot set what a demo needs (half-burnt candles, rosters, links, project fields).
 //
-// Only the project `demo-kiroween2026` and tasks whose id starts with `demo-` are touched.
+// Two projects are seeded every time, one per language. Only the live one has a candle about to go out:
+// the board checks deadlines across all projects, so two of them would bring the curse twice.
+//
+// Only projects whose id starts with `demo-kiroween2026` and tasks whose id starts with `demo-` are touched.
 // Each run replaces them. Nothing else on the board changes. Nothing secret is printed.
 import pg from "pg";
 
 const args = process.argv.slice(2);
-const lang = args.includes("--lang") ? args[args.indexOf("--lang") + 1] : "en";
+const lang = args.includes("--lang") ? args[args.indexOf("--lang") + 1] : "ja";
 const remove = args.includes("--remove");
 const curseIn = args.includes("--curse-in") ? Number(args[args.indexOf("--curse-in") + 1]) : 3;
 if (lang !== "en" && lang !== "ja") { console.error("--lang must be en or ja"); process.exit(1); }
 if (!Number.isInteger(curseIn) || curseIn < 1 || curseIn > 30) { console.error("--curse-in must be 1..30 (minutes)"); process.exit(1); }
 
 if (args.includes("--print")) {
-  console.log(JSON.stringify(demo(Date.now())));
+  console.log(JSON.stringify(["ja", "en"].map((lg) => demo(Date.now(), lg))));
   process.exit(0);
 }
 
@@ -51,25 +55,31 @@ try {
 
   await db.query("BEGIN");
   const gone = await db.query("DELETE FROM tasks WHERE user_id = $1 AND id LIKE 'demo-%'", [uid]);
-  await db.query("DELETE FROM projects WHERE user_id = $1 AND id = 'demo-kiroween2026'", [uid]);
+  await db.query("DELETE FROM projects WHERE user_id = $1 AND id LIKE 'demo-kiroween2026%'", [uid]);
   if (remove) {
     await db.query("COMMIT");
     console.log(`removed the demo (${gone.rowCount} tasks)`);
     process.exit(0);
   }
 
-  const { project, tasks } = demo(Date.now());
-  await db.query("INSERT INTO projects (user_id, id, data, updated_at) VALUES ($1, $2, $3::jsonb, now())",
-    [uid, project.id, JSON.stringify(project)]);
-  await db.query(
-    `INSERT INTO tasks (user_id, id, data, updated_at)
-     SELECT $1, u.id, u.data::jsonb, now() FROM unnest($2::text[], $3::text[]) AS u(id, data)`,
-    [uid, tasks.map((x) => x.id), tasks.map((x) => JSON.stringify(x))]);
+  const now = Date.now();
+  const seeded = [];
+  for (const lg of ["ja", "en"]) {
+    const { project, tasks } = demo(now, lg);
+    await db.query("INSERT INTO projects (user_id, id, data, updated_at) VALUES ($1, $2, $3::jsonb, now())",
+      [uid, project.id, JSON.stringify(project)]);
+    await db.query(
+      `INSERT INTO tasks (user_id, id, data, updated_at)
+       SELECT $1, u.id, u.data::jsonb, now() FROM unnest($2::text[], $3::text[]) AS u(id, data)`,
+      [uid, tasks.map((x) => x.id), tasks.map((x) => JSON.stringify(x))]);
+    seeded.push({ lg, project, tasks });
+  }
   await db.query("COMMIT");
 
   const at = new Date(Date.now() + curseIn * 60_000).toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" });
-  console.log(`seeded "${project.name}": ${tasks.length} tasks (${lang})`);
-  console.log(`the curse comes at about ${at} (in ${curseIn} min). The counting song plays in its last 10 seconds.`);
+  for (const x of seeded) console.log(`seeded "${x.project.name}": ${x.tasks.length} tasks${x.lg === lang ? "  <- live" : ""}`);
+  console.log(`the curse comes at about ${at} (in ${curseIn} min) in "${seeded.find((x) => x.lg === lang).project.name}".`);
+  console.log("The counting song plays in its last 10 seconds.");
   console.log("Reload the board, then choose the project from the project menu (P).");
 } catch (e) {
   await db.query("ROLLBACK").catch(() => {});
@@ -80,9 +90,10 @@ try {
 }
 
 /* ---------- the demo ledger ---------- */
-function demo(now) {
+function demo(now, lg) {
   const MIN = 60_000, H = 60 * MIN, D = 24 * H;
-  const L = (en, ja) => (lang === "ja" ? ja : en);
+  const L = (en, ja) => (lg === "ja" ? ja : en);
+  const live = lg === lang;
   const REPO = "https://github.com/midnight480/kiroween2026_second";
 
   const member = (id, name, role, seenAgo) => ({ id: `demo-m-${id}`, name, role, created: now - 6 * D, lastSeen: now - seenAgo });
@@ -95,10 +106,10 @@ function demo(now) {
   ];
   const AREA = { design: L("Design", "見た目"), sound: L("Sound", "音"), code: L("Code", "実装"), entry: L("Entry", "提出") };
   const project = {
-    id: "demo-kiroween2026",
+    id: `demo-kiroween2026-${lg}`,
     name: L("Kiroween 2026 entry", "Kiroween 2026 提出"),
     // newest, so the API's default project (the oldest) stays the person's own
-    created: now,
+    created: now + (lg === "en" ? 1 : 0),
     fields: [
       { id: "demo-f-area", name: L("Area", "領域"), type: "select", options: Object.values(AREA), onCard: true },
       { id: "demo-f-demo", name: L("In the video", "動画に入れる"), type: "checkbox", onCard: true },
@@ -114,13 +125,13 @@ function demo(now) {
   const task = (o) => {
     n++;
     const t = {
-      id: `demo-${String(n).padStart(2, "0")}`,
+      id: `demo-${lg}-${String(n).padStart(2, "0")}`,
       projectId: project.id,
       title: o.title,
       ...(o.note ? { note: o.note } : {}),
       ...(o.who ? { assignee: `demo-m-${o.who}` } : {}),
       ...(o.area || o.demo ? { fields: { ...(o.area ? { "demo-f-area": AREA[o.area] } : {}), ...(o.demo ? { "demo-f-demo": true } : {}) } } : {}),
-      ...(o.links ? { links: o.links.map((url, i) => ({ id: `demo-l-${n}-${i}`, url })) } : {}),
+      ...(o.links ? { links: o.links.map((url, i) => ({ id: `demo-${lg}-l-${n}-${i}`, url })) } : {}),
       created: now + o.born,
       due: Math.floor((now + o.due) / MIN) * MIN,
       status: o.status ?? "todo",
@@ -153,7 +164,8 @@ function demo(now) {
 
     /* ---- Doing ---- */
     // the jump scare of the video: almost burnt out, the counting song, then the curse
-    task({ status: "doing", born: -57 * MIN, due: curseIn * MIN, who: "mio", area: "entry", demo: true,
+    // (in the other language's ledger it is an ordinary candle, so the curse comes only once)
+    task({ status: "doing", born: live ? -57 * MIN : -1 * D, due: live ? curseIn * MIN : 5 * H, who: "mio", area: "entry", demo: true,
       title: L("Upload the demo video before the deadline", "締切までにデモ動画を上げる"),
       note: L("Three minutes, not a second more.", "3分以内。1秒も超えない。") }),
     // a haunted candle: the clock says half is left, the wax says otherwise
