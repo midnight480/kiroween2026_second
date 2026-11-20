@@ -37,7 +37,8 @@ npm run demo:seed -- --print          # DB に書かず、JSON を出すだけ (
 | Check the board at 360px | 未着手、残り18分 | urgent (残りが1割強) |
 | Read the submission rules again | 期限切れ、呪い済み | 「遅」の印、too late、Haunted の数 |
 | Draw the woman of the curse | 完了 (遅れ) | late の完了 |
-| ほかの完了、未着手 | | 担当者 (5人、役割と最後に見た時)、項目 (領域、動画に入れる)、リンクのチップ |
+| Check the contrast of the ofuda text | 未着手、残り45分 | urgent (2つ目) |
+| ほかの完了、進行中、未着手 (各プロジェクト28件のうち残り) | 担当者 (5人、役割と最後に見た時)、項目 (領域、動画に入れる)、リンクのチップ |
 
 - リンクの GitHub の Issue と PR の番号、Google のドキュメントの id は見た目のための架空のもの。開いても中身はない。
 - 撮影の前に、Safe mode をオフにする (オンだと女の登場と閃光が出ない)。音を入れるなら Mute もオフにする。

@@ -162,6 +162,15 @@ function demo(now, lg) {
       title: L("Deploy to Cloudflare Workers", "Cloudflare Workers に公開する"),
       links: [`${REPO}/pull/12`, "https://tomoshibi.midnight480.com/"] }),
 
+    task({ status: "done", born: -4 * D, due: -1 * D, doneAt: -2 * D, who: "kiro", area: "code",
+      title: L("Add sign-in with Clerk (optional, guests keep everything)", "Clerk でサインインを足す (任意。ゲストのままでも全部使える)") }),
+    task({ status: "done", born: -5 * D, due: -2 * D, doneAt: -3 * D, who: "aoi", area: "sound",
+      title: L("Compose the counting song (hitotsu, futatsu...)", "数え歌を作る (ひとつ、ふたつ…)"),
+      note: L("Made with Web Audio only. No sound files.", "Web Audio だけで作る。音声ファイルは使わない。") }),
+    task({ status: "done", born: -3 * D, due: -12 * H, doneAt: -1 * D, who: "kiro", area: "code",
+      title: L("Keep signed-in ledgers in Neon via Hyperdrive", "サインインした人の帳面を Hyperdrive 経由で Neon に置く"),
+      links: [`${REPO}/pull/27`] }),
+
     /* ---- Doing ---- */
     // the jump scare of the video: almost burnt out, the counting song, then the curse
     // (in the other language's ledger it is an ordinary candle, so the curse comes only once)
@@ -175,6 +184,13 @@ function demo(now, lg) {
     task({ status: "doing", born: -2 * D, due: 6 * H, extended: 2, who: "ren", area: "design",
       title: L("Polish the ofuda cards in the light theme", "ライトテーマの御札を仕上げる"),
       links: [`${REPO}/issues/21`, "https://docs.google.com/presentation/d/demo-tomoshibi-style/edit"] }),
+
+    task({ status: "doing", born: -16 * H, due: 8 * H, who: "mio", area: "entry", demo: true,
+      title: L("Shoot the jump scare scene (once, only once)", "ジャンプスケアの場面を撮る (1回だけ)"),
+      note: L("Turn Safe mode off. Sound on.", "Safe mode はオフ。音はオン。") }),
+    task({ status: "doing", born: -1 * D, due: 2 * D, extended: 1, who: "kiro", area: "code",
+      title: L("Write the PWA manifest and service worker by hand", "PWA の manifest と Service Worker を手で書く"),
+      links: [`${REPO}/pull/31`] }),
 
     /* ---- To do ---- */
     task({ born: -2 * H, due: 18 * MIN, who: "kiro", area: "code", demo: true,
@@ -194,6 +210,28 @@ function demo(now, lg) {
     task({ born: -2 * D, due: 4 * D + 6 * H, who: "mio", area: "entry",
       title: L("Submit to Kiroween", "Kiroween に提出する"),
       links: ["https://kiroween.devpost.com/"] }),
+    task({ born: -4 * H, due: 45 * MIN, who: "ren", area: "design",
+      title: L("Check the contrast of the ofuda text", "御札の文字のコントラストを確かめる"),
+      note: L("Body text must stay readable. Only headings may fade.", "本文ははっきり読めること。かすれてよいのは見出しだけ。") }),
+    task({ born: -1 * D, due: 2 * D, who: "aoi", area: "sound",
+      title: L("Record the room tone for the gate", "ゲート画面の環境音を作る") }),
+    task({ born: -2 * H, due: 3 * D, who: "mio", area: "entry",
+      title: L("Write the README for the judges", "審査員向けの README を書く"),
+      links: [REPO] }),
+    task({ born: -6 * H, due: 1 * D + 3 * H, who: "kiro", area: "code",
+      title: L("Test with reduced motion turned on", "「視差効果を減らす」をオンにして確かめる") }),
+    task({ born: -3 * H, due: 1 * D + 6 * H, who: "aoi", area: "design",
+      title: L("Make the Devpost thumbnail", "Devpost のサムネイルを作る"),
+      links: ["https://docs.google.com/presentation/d/demo-tomoshibi-thumbnail/edit"] }),
+    task({ born: -8 * H, due: 2 * D + 12 * H, who: "sora", area: "design",
+      title: L("Proofread the English help page", "英語のヘルプページを校正する") }),
+    task({ born: -5 * H, due: 2 * D, who: "kiro", area: "code", demo: true,
+      title: L("Show the API: add a candle with curl", "API を見せる: curl で灯を登録する"),
+      links: ["https://tomoshibi.midnight480.com/api"] }),
+    task({ born: -1 * H, due: 3 * D + 2 * H, who: "mio", area: "entry",
+      title: L("Rehearse the 3-minute narration", "3分のナレーションを練習する") }),
+    task({ born: -2 * D, due: 1 * D + 18 * H, who: "ren", area: "design",
+      title: L("Try the board on a small Android phone", "小さな Android 端末で看板を試す") }),
     // already out, and the curse already came for it: it only waits, unlit
     task({ born: -1 * D, due: -2 * H, cursed: true, who: "ren", area: "entry",
       title: L("Read the submission rules again", "応募規約を読み直す"),
