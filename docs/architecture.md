@@ -46,7 +46,7 @@ interface Task {
 
 ## 多言語とテーマ
 - `src/i18n.ts`: 英語と日本語の辞書。`t(key, vars)`、`applyI18n()`、`formatDue()`。HTML は `data-i18n` (本文)、`data-i18n-html`、`data-i18n-ph` (placeholder)、`data-i18n-title`、`data-i18n-aria` で差し込む。動的な文言は `refresh()` で `t()` を呼ぶ。
-- 和ホラーの語 (灯、遅、うしろ、遅かったね、数え歌) は辞書に入れない。どの言語でも日本語のまま出す。
+- 和ホラーの語 (灯、遅、うしろ、遅かったね、数え歌) は辞書に入れない。どの言語でも日本語のまま出す。例外として、カードの印「遅」に添える英語の読み (`stampGloss`、`stampTitle`) は辞書に入れる。日本語では添えない。
 - 初期言語は `navigator.language` が `ja` なら日本語、それ以外は英語。保存した設定が優先。
 - テーマは `<html data-theme="light|dark">`。色は `style.css` の `:root` と `:root[data-theme="light"]` の変数で切り替える。`system` は `prefers-color-scheme` に従う。
 - 時刻の色味は `applyAtmosphere()`。ダークは `--dark-mid` / `--dark-edge`、ライトは `--veil` を変える。

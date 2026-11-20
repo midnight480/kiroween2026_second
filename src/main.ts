@@ -461,6 +461,7 @@ function createCard(task: Task): HTMLElement {
   el.innerHTML = `
     <div class="candle" aria-hidden="true"><div class="wax"><div class="wick"></div><div class="flame"></div></div></div>
     <div class="ofuda">
+      <span class="stamp" aria-hidden="true"><b>遅</b><small></small></span>
       <h3></h3>
       <div class="who"></div>
       <div class="times"><span class="left"></span><span class="when"></span></div>
@@ -727,6 +728,10 @@ function refresh() {
     el.classList.toggle("out", out);
     el.setAttribute("aria-label", t("cardAria", { title: task.title }));
     el.querySelector("h3")!.textContent = task.title;
+    // the seal stays 遅 in every language; English adds a small reading for those who cannot read it
+    const stamp = el.querySelector<HTMLElement>(".stamp")!;
+    stamp.querySelector("small")!.textContent = t("stampGloss");
+    stamp.title = t("stampTitle");
     const m = task.assignee ? projects.find((p) => p.id === task.projectId)?.members.find((x) => x.id === task.assignee) : undefined;
     el.querySelector(".who")!.innerHTML = m ? `<span class="avatar" aria-hidden="true">${esc([...m.name][0] ?? "")}</span>${esc(m.name)}` : "";
     el.querySelector(".note")!.textContent = task.note ?? "";
