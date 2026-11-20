@@ -91,6 +91,8 @@ for (const s of n.scenes) {
 }
 writeFileSync("video/out/seg/list.txt", list.join("\n") + "\n");
 ff(["-f", "concat", "-safe", "0", "-i", "video/out/seg/list.txt",
-  "-af", "loudnorm=I=-16:TP=-1.5:LRA=11", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart",
+  "-af", "loudnorm=I=-16:TP=-1.5:LRA=11", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
+  // loudnorm works at 192 kHz inside; without this the file would be 96 kHz, which some players do not play
+  "-ar", "48000", "-movflags", "+faststart",
   "video/out/tomoshibi-demo.mp4"]);
 console.log(`total ${total.toFixed(1)}s${total > 180 ? "  OVER 3 MINUTES" : ""} -> video/out/tomoshibi-demo.mp4`);
